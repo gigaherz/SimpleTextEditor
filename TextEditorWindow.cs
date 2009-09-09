@@ -12,7 +12,7 @@ namespace SimpleTextEditor
 {
     public partial class TextEditorWindow : Form
     {
-        Properties.Settings appSettings = new SimpleTextEditor.Properties.Settings();
+        Properties.Settings appSettings;
 
         string filePath;
         string fileName;
@@ -222,6 +222,9 @@ namespace SimpleTextEditor
 
         private void TextEditorWindow_Load(object sender, EventArgs e)
         {
+            appSettings = new SimpleTextEditor.Properties.Settings();
+            appSettings.Reload();
+
             filePath = "";
             fileName = "";
             if (appSettings.Font != null)
@@ -261,8 +264,11 @@ namespace SimpleTextEditor
                 DoOpenFile(cmdLineArgs[0]);
             }
 
-            if ((appSettings.WindowSize != null) && (appSettings.WindowSize.Width > 0) && (appSettings.WindowSize.Height > 0))
-                this.Size = appSettings.WindowSize;
+            if (appSettings.WindowSizeSaved != null)
+            {
+                if ((appSettings.WindowSizeWidth > 0) && (appSettings.WindowSizeHeight > 0))
+                    this.Size = new Size(appSettings.WindowSizeWidth,appSettings.WindowSizeHeight);
+            }
 
             unmaximizedSize = this.Size;
         }
@@ -433,8 +439,14 @@ namespace SimpleTextEditor
                 e.Cancel = true;
                 return;
             }
-            appSettings.WindowSize = unmaximizedSize;
-            appSettings.Save();
+
+            if (unmaximizedSize.Width > 0 && unmaximizedSize.Height > 0)
+            {
+                appSettings.WindowSizeSaved = true;
+                appSettings.WindowSizeWidth = unmaximizedSize.Width;
+                appSettings.WindowSizeHeight = unmaximizedSize.Height;
+                appSettings.Save();
+            }
         }
 
         private void textBox1_DragEnter(object sender, DragEventArgs e)
