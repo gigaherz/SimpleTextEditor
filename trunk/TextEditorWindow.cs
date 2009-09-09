@@ -703,7 +703,11 @@ namespace SimpleTextEditor
 
             if ((e.KeyCode == Keys.Delete) && (e.Modifiers == Keys.None))
             {
-                if (editBox.TextLength > 0)
+                if (editBox.SelectionLength > 0)
+                {
+                    AddUndoHistoryItem("Block Delete", editBox.SelectedText, editBox.SelectionStart, editBox.SelectionLength);
+                }
+                else if (editBox.TextLength > 0)
                 {
                     if ((lastItem == null) || (lastItem.UndoType != "Delete"))
                     {
@@ -760,6 +764,7 @@ namespace SimpleTextEditor
                         editBox.SelectionLength = historyItems[0].Length;
                         editBox.SelectedText = "";
                         break;
+                    case "Block Delete":
                     case "Delete":
                     case "Replace":
                     case "Cut":
@@ -795,6 +800,7 @@ namespace SimpleTextEditor
                         editBox.SelectionLength = 0;
                         editBox.SelectedText = redoHistoryItems[0].Text;
                         break;
+                    case "Block Delete":
                     case "Delete":
                     case "Replace":
                     case "Cut":
@@ -884,7 +890,12 @@ namespace SimpleTextEditor
                     }
                     break;
                 case 8:
-                    if (editBox.SelectionStart > 0)
+                    if (editBox.SelectionLength > 0)
+                    {
+                        AddUndoHistoryItem("Block Delete", "", editBox.SelectionStart, editBox.SelectionLength);
+                        lastItem.Text = editBox.SelectedText;
+                    }
+                    else if (editBox.SelectionStart > 0)
                     {
                         if ((lastItem == null) || (lastItem.UndoType != "Delete"))
                         {
@@ -902,8 +913,7 @@ namespace SimpleTextEditor
                 default:
                     if (editBox.SelectionLength > 0)
                     {
-                        AddUndoHistoryItem("Replaced", "", editBox.SelectionStart, editBox.SelectionLength);
-                        lastItem.Text = editBox.SelectedText;
+                        AddUndoHistoryItem("Replaced", editBox.SelectedText, editBox.SelectionStart, editBox.SelectionLength);
                     }
                     if ((lastItem == null) || (lastItem.UndoType != "Type"))
                     {
