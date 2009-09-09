@@ -259,18 +259,22 @@ namespace SimpleTextEditor
 
             UpdateStatusBar();
 
-            if (cmdLineArgs.Length > 0)
-            {
-                DoOpenFile(cmdLineArgs[0]);
-            }
-
-            if (appSettings.WindowSizeSaved != null)
+            if (appSettings.WindowSizeSaved)
             {
                 if ((appSettings.WindowSizeWidth > 0) && (appSettings.WindowSizeHeight > 0))
                     this.Size = new Size(appSettings.WindowSizeWidth,appSettings.WindowSizeHeight);
             }
 
             unmaximizedSize = this.Size;
+
+            // show the window before starting to load the data
+            this.Visible = true;
+            this.Refresh();
+
+            if (cmdLineArgs.Length > 0)
+            {
+                DoOpenFile(cmdLineArgs[0]);
+            }
         }
 
         private void helpToolStripButton_Click(object sender, EventArgs e)
