@@ -1101,5 +1101,38 @@ namespace SimpleTextEditor
                 unmaximizedSize = this.Size;
             }
         }
+
+        private void editBox_DragEnter(object sender, DragEventArgs e)
+        {
+            e.Effect = DragDropEffects.None;
+
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                object data = e.Data.GetData(DataFormats.FileDrop);
+                string[] sdata = (string[])data;
+
+                if(sdata.Length == 1)
+                    e.Effect = DragDropEffects.Copy;
+            }
+        }
+
+        private void editBox_DragDrop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                object data = e.Data.GetData(DataFormats.FileDrop);
+                string[] sdata = (string[])data;
+
+                if (sdata.Length == 1)
+                {
+                    string fileName = sdata[0];
+
+                    if (!AskSave())
+                        return;
+
+                    DoOpenFile(fileName);
+                }
+            }
+        }
     }
 }
