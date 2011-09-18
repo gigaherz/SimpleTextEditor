@@ -10,7 +10,7 @@ using System.Drawing.Printing;
 
 namespace SimpleTextEditor
 {
-    public partial class TextEditorWindow : Form
+    partial class TextEditorWindow : Form
     {
         Properties.Settings appSettings;
 
@@ -134,7 +134,7 @@ namespace SimpleTextEditor
                 return;
             filePath = "";
             fileName = "";
-            Text = "(untitled) - SimpleTextEditor";
+            Text = "(untitled) - " + Application.ProductName;
             editBox.Text = "";
 
             historyItems.Clear();
@@ -185,9 +185,10 @@ namespace SimpleTextEditor
                         encoding = Encoding.UTF8;
                     }
 
-                    StreamWriter wrt = new StreamWriter(new FileStream(fullFileName, FileMode.Create, FileAccess.Write, FileShare.None), encoding);
-                    wrt.Write(editBox.Text);
-                    wrt.Close();
+                    using (StreamWriter wrt = new StreamWriter(new FileStream(fullFileName, FileMode.Create, FileAccess.Write, FileShare.None), encoding))
+                    {
+                        wrt.Write(text);
+                    }
 
                     lastFormat = saveFormat;
 
@@ -213,7 +214,7 @@ namespace SimpleTextEditor
                 {
                     fileName = Path.GetFileName(saveFileDialog1.FileName);
                     filePath = saveFileDialog1.FileName.Substring(0, saveFileDialog1.FileName.Length - fileName.Length);
-                    Text = fileName + " - SimpleTextEditor";
+                    Text = fileName + " - " + Application.ProductName;
                     return true;
                 }
             }
@@ -323,7 +324,7 @@ namespace SimpleTextEditor
         private void DoSetFont(Font font, Color color)
         {
             editBox.Font = font;
-            editBox.ForeColor = fontDialog1.Color;
+            editBox.ForeColor = color;
             appSettings.Font = font;
             appSettings.TextColor = editBox.ForeColor;
             appSettings.Save();
@@ -543,9 +544,11 @@ namespace SimpleTextEditor
             {
                 byte[] bytes;
 
-                FileStream stream = new FileStream(fullFileName, FileMode.Open, FileAccess.Read, FileShare.Read);
-                bytes = new byte[stream.Length];
-                stream.Read(bytes, 0, (int)stream.Length);
+                using (FileStream stream = new FileStream(fullFileName, FileMode.Open, FileAccess.Read, FileShare.Read))
+                {
+                    bytes = new byte[stream.Length];
+                    stream.Read(bytes, 0, (int)stream.Length);
+                }
 
                 //00 00 FE FF  	UTF-32, big-endian
                 //FF FE 00 00 	UTF-32, little-endian
@@ -559,9 +562,10 @@ namespace SimpleTextEditor
                 if ((bytes.Length > 4) && (bytes[0] == 0x00) && (bytes[1] == 0x00) && (bytes[2] == 0xFE) && (bytes[3] == 0xFF)) isUnicode = true;
                 if ((bytes.Length > 3) && (bytes[0] == 0xEF) && (bytes[1] == 0xBB) && (bytes[2] == 0xBF)) isUnicode = true;
 
-                StreamReader rdr = new StreamReader(new MemoryStream(bytes), true);
-                editBox.Text = rdr.ReadToEnd();
-                rdr.Close();
+                using (StreamReader rdr = new StreamReader(new MemoryStream(bytes), true))
+                {
+                    editBox.Text = rdr.ReadToEnd();
+                }
 
                 // Detect formatting
                 if (editBox.Text.IndexOf("\r\n") < 0) // if doesn't have DOS line endings
@@ -583,7 +587,7 @@ namespace SimpleTextEditor
 
                 fileName = Path.GetFileName(fullFileName);
                 filePath = fullFileName.Substring(0, fullFileName.Length - fileName.Length);
-                Text = fileName + " - SimpleTextEditor";
+                Text = fileName + " - " + Application.ProductName;
 
                 if (appSettings.RecentList.Contains(fullFileName))
                     appSettings.RecentList.Remove(fullFileName);
@@ -1125,12 +1129,12 @@ namespace SimpleTextEditor
 
                 if (sdata.Length == 1)
                 {
-                    string fileName = sdata[0];
+                    string file = sdata[0];
 
                     if (!AskSave())
                         return;
 
-                    DoOpenFile(fileName);
+                    DoOpenFile(file);
                 }
             }
         }

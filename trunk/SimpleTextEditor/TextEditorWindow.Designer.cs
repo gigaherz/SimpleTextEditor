@@ -117,7 +117,7 @@
             this.toolBar.Location = new System.Drawing.Point(0, 0);
             this.toolBar.Name = "toolBar";
             this.toolBar.Padding = new System.Windows.Forms.Padding(4, 0, 1, 0);
-            this.toolBar.Size = new System.Drawing.Size(779, 25);
+            this.toolBar.Size = new System.Drawing.Size(788, 25);
             this.toolBar.TabIndex = 0;
             this.toolBar.Text = "Print";
             this.toolBar.ItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(this.toolBar_ItemClicked);
@@ -143,8 +143,8 @@
             this.btnOpen.Name = "btnOpen";
             this.btnOpen.Size = new System.Drawing.Size(32, 22);
             this.btnOpen.Text = "&Open";
-            this.btnOpen.Click += new System.EventHandler(this.openToolStripButton_Click);
             this.btnOpen.ButtonClick += new System.EventHandler(this.openToolStripButton_ButtonClick);
+            this.btnOpen.Click += new System.EventHandler(this.openToolStripButton_Click);
             // 
             // mnuOpen
             // 
@@ -425,7 +425,7 @@
             // 
             this.saveFileDialog1.DefaultExt = "txt";
             this.saveFileDialog1.Filter = "Text File (*.txt)|*.txt|Text File with UNIX line endings (*.txt)|*.txt|Unicode Te" +
-                "xt File (UTF-8) (*.txt)|*.txt|All Files (*.*)|*.*";
+    "xt File (UTF-8) (*.txt)|*.txt|All Files (*.*)|*.*";
             // 
             // openFileDialog1
             // 
@@ -457,24 +457,24 @@
             // 
             // printDocument1
             // 
-            this.printDocument1.PrintPage += new System.Drawing.Printing.PrintPageEventHandler(this.printDocument1_PrintPage);
             this.printDocument1.BeginPrint += new System.Drawing.Printing.PrintEventHandler(this.printDocument1_BeginPrint);
+            this.printDocument1.PrintPage += new System.Drawing.Printing.PrintPageEventHandler(this.printDocument1_PrintPage);
             // 
             // statusBar
             // 
             this.statusBar.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.lblSpacer,
             this.lblPosition});
-            this.statusBar.Location = new System.Drawing.Point(0, 349);
+            this.statusBar.Location = new System.Drawing.Point(0, 542);
             this.statusBar.Name = "statusBar";
-            this.statusBar.Size = new System.Drawing.Size(779, 24);
+            this.statusBar.Size = new System.Drawing.Size(788, 24);
             this.statusBar.TabIndex = 2;
             this.statusBar.Text = "statusStrip1";
             // 
             // lblSpacer
             // 
             this.lblSpacer.Name = "lblSpacer";
-            this.lblSpacer.Size = new System.Drawing.Size(695, 19);
+            this.lblSpacer.Size = new System.Drawing.Size(704, 19);
             this.lblSpacer.Spring = true;
             // 
             // lblPosition
@@ -496,10 +496,10 @@
             this.toolStripButton3,
             this.toolStripButton5,
             this.searchEndLabel});
-            this.searchBar.Location = new System.Drawing.Point(0, 324);
+            this.searchBar.Location = new System.Drawing.Point(0, 517);
             this.searchBar.Name = "searchBar";
             this.searchBar.Padding = new System.Windows.Forms.Padding(4, 0, 1, 0);
-            this.searchBar.Size = new System.Drawing.Size(779, 25);
+            this.searchBar.Size = new System.Drawing.Size(788, 25);
             this.searchBar.TabIndex = 4;
             this.searchBar.Text = "Searchbar";
             // 
@@ -580,15 +580,15 @@
             this.editBox.Multiline = true;
             this.editBox.Name = "editBox";
             this.editBox.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.editBox.Size = new System.Drawing.Size(779, 299);
+            this.editBox.Size = new System.Drawing.Size(788, 492);
             this.editBox.TabIndex = 5;
             this.editBox.WordWrap = false;
-            this.editBox.DragDrop += new System.Windows.Forms.DragEventHandler(this.editBox_DragDrop);
             this.editBox.Click += new System.EventHandler(this.editBox_Click_1);
-            this.editBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.editBox_KeyDown);
-            this.editBox.KeyUp += new System.Windows.Forms.KeyEventHandler(this.editBox_KeyUp);
-            this.editBox.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.editBox_KeyPress);
+            this.editBox.DragDrop += new System.Windows.Forms.DragEventHandler(this.editBox_DragDrop);
             this.editBox.DragEnter += new System.Windows.Forms.DragEventHandler(this.editBox_DragEnter);
+            this.editBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.editBox_KeyDown);
+            this.editBox.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.editBox_KeyPress);
+            this.editBox.KeyUp += new System.Windows.Forms.KeyEventHandler(this.editBox_KeyUp);
             // 
             // colorDialog1
             // 
@@ -599,17 +599,18 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(779, 373);
+            this.ClientSize = new System.Drawing.Size(788, 566);
             this.Controls.Add(this.editBox);
             this.Controls.Add(this.searchBar);
             this.Controls.Add(this.statusBar);
             this.Controls.Add(this.toolBar);
+            this.DoubleBuffered = true;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "TextEditorWindow";
             this.Text = "(untitled) - SimpleTextExitor";
-            this.Load += new System.EventHandler(this.TextEditorWindow_Load);
-            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.TextEditorWindow_FormClosed);
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.TextEditorWindow_FormClosing);
+            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.TextEditorWindow_FormClosed);
+            this.Load += new System.EventHandler(this.TextEditorWindow_Load);
             this.Resize += new System.EventHandler(this.TextEditorWindow_Resize);
             this.toolBar.ResumeLayout(false);
             this.toolBar.PerformLayout();
