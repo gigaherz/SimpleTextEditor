@@ -8,7 +8,7 @@ using System.Windows.Forms;
 
 namespace SimpleTextEditor
 {
-    public partial class ReplaceBox : Form
+    partial class ReplaceBox : Form
     {
         TextBox Where;
 
@@ -187,10 +187,12 @@ namespace SimpleTextEditor
                 searchStart = Where.SelectionStart;
             }
 
+#if false
             int replaceStart = searchStart;
             int replaceLength = Where.TextLength - replaceStart;
             if (Selection.Checked)
                 replaceLength = selectionLength - replaceStart;
+#endif
 
             int numMatches = 0;
             bool needToContinue = true;

@@ -8,7 +8,7 @@ using System.Windows.Forms;
 
 namespace SimpleTextEditor
 {
-    public partial class DropDownHistoryBox : Form
+    partial class DropDownHistoryBox : Form
     {
         private string historyClassText = "Undo";
 
