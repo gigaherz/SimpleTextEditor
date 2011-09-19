@@ -10,7 +10,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>SimpleTextEditor</RootNamespace>
     <AssemblyName>SimpleTextEditor</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ApplicationIcon>UtilityText.ico</ApplicationIcon>
     <SignManifests>true</SignManifests>
@@ -66,8 +66,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Deployment" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
@@ -78,6 +76,7 @@
     <Compile Include="DropDownHistoryBox.Designer.cs">
       <DependentUpon>DropDownHistoryBox.cs</DependentUpon>
     </Compile>
+    <Compile Include="FileAssociationTools.cs" />
     <Compile Include="Win32.cs" />
     <Compile Include="ReplaceBox.cs">
       <SubType>Form</SubType>

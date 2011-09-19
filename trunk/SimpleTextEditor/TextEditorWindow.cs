@@ -1,32 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 using System.IO;
 using System.Drawing.Printing;
 
+#if ENABLE_JUMP_LISTS
+using Microsoft.WindowsAPICodePack.Taskbar;
+#endif
+
 namespace SimpleTextEditor
 {
     partial class TextEditorWindow : Form
     {
-        Properties.Settings appSettings;
-
-        string filePath;
-        string fileName;
-
-        int lastFormat;
-
-        string stringToPrint;
-
-        string searchFor;
-        int searchStart;
-        bool searchCase = false;
-
-        List<ToolStripMenuItem> recentList;
-
         private class HistoryItem
         {
             private string itemType;
@@ -82,6 +70,21 @@ namespace SimpleTextEditor
                 return itemType;
             }
         }
+        
+        Properties.Settings appSettings;
+
+        string filePath;
+        string fileName;
+
+        int lastFormat;
+
+        string stringToPrint;
+
+        string searchFor;
+        int searchStart;
+        bool searchCase = false;
+
+        List<ToolStripMenuItem> recentList;
 
         List<HistoryItem> historyItems;
         HistoryItem lastItem;
@@ -92,10 +95,29 @@ namespace SimpleTextEditor
 
         Size unmaximizedSize;
 
+#if ENABLE_JUMP_LISTS
+        JumpList jumpList;
+#endif
+
         public TextEditorWindow(string[] args)
         {
             InitializeComponent();
             cmdLineArgs = args;
+
+            if (!FileAssociationTools.CheckFileRegistrations())
+            {
+                RegisterAssociations();
+            }
+        }
+
+        private void RegisterAssociations()
+        {
+            if (!FileAssociationTools.HandleFileAssociationRegistration_Elevated(false, true))
+            {
+                MessageBox.Show(string.Format("{0} may need administrator privileges to register itself as a text editor. Please allow the application to make these changes.", Application.ProductName));
+
+                FileAssociationTools.HandleFileAssociationRegistration(false, true);
+            }
         }
 
         private void btnInsertTime_Click(object sender, EventArgs e)
@@ -254,7 +276,8 @@ namespace SimpleTextEditor
 
             recentList = new List<ToolStripMenuItem>();
 
-            if (appSettings.RecentList == null) appSettings.RecentList = new System.Collections.Specialized.StringCollection();
+            if (appSettings.RecentList == null)
+                appSettings.RecentList = new System.Collections.Specialized.StringCollection();
 
             UpdateRecentList();
 
@@ -277,6 +300,14 @@ namespace SimpleTextEditor
                 DoOpenFile(cmdLineArgs[0]);
             }
         }
+                
+#if ENABLE_JUMP_LISTS
+        void jumpList_JumpListItemsRemoved(object sender, UserRemovedJumpListItemsEventArgs e)
+        {
+            MessageBox.Show(string.Format("User removed items from jump list."));
+            //throw new NotImplementedException();
+        }
+#endif
 
         private void helpToolStripButton_Click(object sender, EventArgs e)
         {
@@ -648,7 +679,6 @@ namespace SimpleTextEditor
                         path = left + "\\...\\" + right;
                     else
                         path = left + right;
-
                 }
 
                 ToolStripMenuItem item = new ToolStripMenuItem(path, null, new EventHandler(RecentList_Click));
@@ -1137,6 +1167,22 @@ namespace SimpleTextEditor
                     DoOpenFile(file);
                 }
             }
+        }
+
+        private void TextEditorWindow_Shown(object sender, EventArgs e)
+        {
+#if ENABLE_JUMP_LISTS
+            jumpList = JumpList.CreateJumpList();
+            jumpList.KnownCategoryToDisplay = JumpListKnownCategoryType.Recent;
+            jumpList.KnownCategoryOrdinalPosition = 0;
+            jumpList.JumpListItemsRemoved += new EventHandler<UserRemovedJumpListItemsEventArgs>(jumpList_JumpListItemsRemoved);
+            jumpList.Refresh();
+#endif
+        }
+
+        private void registerFileAssociationsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            RegisterAssociations();
         }
     }
 }

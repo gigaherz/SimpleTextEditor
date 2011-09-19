@@ -85,6 +85,8 @@
             this.searchEndLabel = new System.Windows.Forms.ToolStripLabel();
             this.editBox = new System.Windows.Forms.TextBox();
             this.colorDialog1 = new System.Windows.Forms.ColorDialog();
+            this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
+            this.registerFileAssociationsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolBar.SuspendLayout();
             this.statusBar.SuspendLayout();
             this.searchBar.SuspendLayout();
@@ -379,7 +381,9 @@
             this.backgroundColorToolStripMenuItem,
             this.separator10,
             this.mnuWordWrap,
-            this.mnuStatusBar});
+            this.mnuStatusBar,
+            this.toolStripMenuItem1,
+            this.registerFileAssociationsToolStripMenuItem});
             this.btnOptions.Image = ((System.Drawing.Image)(resources.GetObject("btnOptions.Image")));
             this.btnOptions.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.btnOptions.Name = "btnOptions";
@@ -390,7 +394,7 @@
             // 
             this.mnuFont.Image = ((System.Drawing.Image)(resources.GetObject("mnuFont.Image")));
             this.mnuFont.Name = "mnuFont";
-            this.mnuFont.Size = new System.Drawing.Size(179, 22);
+            this.mnuFont.Size = new System.Drawing.Size(206, 22);
             this.mnuFont.Text = "Font...";
             this.mnuFont.Click += new System.EventHandler(this.fontToolStripMenuItem_Click);
             // 
@@ -398,26 +402,26 @@
             // 
             this.backgroundColorToolStripMenuItem.Image = ((System.Drawing.Image)(resources.GetObject("backgroundColorToolStripMenuItem.Image")));
             this.backgroundColorToolStripMenuItem.Name = "backgroundColorToolStripMenuItem";
-            this.backgroundColorToolStripMenuItem.Size = new System.Drawing.Size(179, 22);
+            this.backgroundColorToolStripMenuItem.Size = new System.Drawing.Size(206, 22);
             this.backgroundColorToolStripMenuItem.Text = "Background Color...";
             this.backgroundColorToolStripMenuItem.Click += new System.EventHandler(this.backgroundColorToolStripMenuItem_Click);
             // 
             // separator10
             // 
             this.separator10.Name = "separator10";
-            this.separator10.Size = new System.Drawing.Size(176, 6);
+            this.separator10.Size = new System.Drawing.Size(203, 6);
             // 
             // mnuWordWrap
             // 
             this.mnuWordWrap.Name = "mnuWordWrap";
-            this.mnuWordWrap.Size = new System.Drawing.Size(179, 22);
+            this.mnuWordWrap.Size = new System.Drawing.Size(206, 22);
             this.mnuWordWrap.Text = "Word Wrap";
             this.mnuWordWrap.Click += new System.EventHandler(this.wordWrapToolStripMenuItem_Click);
             // 
             // mnuStatusBar
             // 
             this.mnuStatusBar.Name = "mnuStatusBar";
-            this.mnuStatusBar.Size = new System.Drawing.Size(179, 22);
+            this.mnuStatusBar.Size = new System.Drawing.Size(206, 22);
             this.mnuStatusBar.Text = "Statusbar";
             this.mnuStatusBar.Click += new System.EventHandler(this.statusbarToolStripMenuItem_Click);
             // 
@@ -595,6 +599,18 @@
             this.colorDialog1.AnyColor = true;
             this.colorDialog1.Color = System.Drawing.Color.White;
             // 
+            // toolStripMenuItem1
+            // 
+            this.toolStripMenuItem1.Name = "toolStripMenuItem1";
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(203, 6);
+            // 
+            // registerFileAssociationsToolStripMenuItem
+            // 
+            this.registerFileAssociationsToolStripMenuItem.Name = "registerFileAssociationsToolStripMenuItem";
+            this.registerFileAssociationsToolStripMenuItem.Size = new System.Drawing.Size(206, 22);
+            this.registerFileAssociationsToolStripMenuItem.Text = "Register File Associations";
+            this.registerFileAssociationsToolStripMenuItem.Click += new System.EventHandler(this.registerFileAssociationsToolStripMenuItem_Click);
+            // 
             // TextEditorWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -611,6 +627,7 @@
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.TextEditorWindow_FormClosing);
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.TextEditorWindow_FormClosed);
             this.Load += new System.EventHandler(this.TextEditorWindow_Load);
+            this.Shown += new System.EventHandler(this.TextEditorWindow_Shown);
             this.Resize += new System.EventHandler(this.TextEditorWindow_Resize);
             this.toolBar.ResumeLayout(false);
             this.toolBar.PerformLayout();
@@ -681,6 +698,8 @@
         private System.Windows.Forms.ToolStripMenuItem backgroundColorToolStripMenuItem;
         private System.Windows.Forms.ToolStripButton toolStripButton4;
         private System.Windows.Forms.ToolStripButton toolStripButton5;
+        private System.Windows.Forms.ToolStripSeparator toolStripMenuItem1;
+        private System.Windows.Forms.ToolStripMenuItem registerFileAssociationsToolStripMenuItem;
     }
 }
 
