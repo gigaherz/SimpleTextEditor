@@ -77,7 +77,7 @@
       <DependentUpon>DropDownHistoryBox.cs</DependentUpon>
     </Compile>
     <Compile Include="FileAssociationTools.cs" />
-    <Compile Include="Win32.cs" />
+    <Compile Include="NativeMethods.cs" />
     <Compile Include="ReplaceBox.cs">
       <SubType>Form</SubType>
     </Compile>
