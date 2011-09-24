@@ -65,6 +65,8 @@
             this.separator10 = new System.Windows.Forms.ToolStripSeparator();
             this.mnuWordWrap = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuStatusBar = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
+            this.registerFileAssociationsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.saveFileDialog1 = new System.Windows.Forms.SaveFileDialog();
             this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
             this.fontDialog1 = new System.Windows.Forms.FontDialog();
@@ -85,8 +87,6 @@
             this.searchEndLabel = new System.Windows.Forms.ToolStripLabel();
             this.editBox = new System.Windows.Forms.TextBox();
             this.colorDialog1 = new System.Windows.Forms.ColorDialog();
-            this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
-            this.registerFileAssociationsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolBar.SuspendLayout();
             this.statusBar.SuspendLayout();
             this.searchBar.SuspendLayout();
@@ -425,6 +425,18 @@
             this.mnuStatusBar.Text = "Statusbar";
             this.mnuStatusBar.Click += new System.EventHandler(this.statusbarToolStripMenuItem_Click);
             // 
+            // toolStripMenuItem1
+            // 
+            this.toolStripMenuItem1.Name = "toolStripMenuItem1";
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(203, 6);
+            // 
+            // registerFileAssociationsToolStripMenuItem
+            // 
+            this.registerFileAssociationsToolStripMenuItem.Name = "registerFileAssociationsToolStripMenuItem";
+            this.registerFileAssociationsToolStripMenuItem.Size = new System.Drawing.Size(206, 22);
+            this.registerFileAssociationsToolStripMenuItem.Text = "Register File Associations";
+            this.registerFileAssociationsToolStripMenuItem.Click += new System.EventHandler(this.registerFileAssociationsToolStripMenuItem_Click);
+            // 
             // saveFileDialog1
             // 
             this.saveFileDialog1.DefaultExt = "txt";
@@ -598,18 +610,6 @@
             // 
             this.colorDialog1.AnyColor = true;
             this.colorDialog1.Color = System.Drawing.Color.White;
-            // 
-            // toolStripMenuItem1
-            // 
-            this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-            this.toolStripMenuItem1.Size = new System.Drawing.Size(203, 6);
-            // 
-            // registerFileAssociationsToolStripMenuItem
-            // 
-            this.registerFileAssociationsToolStripMenuItem.Name = "registerFileAssociationsToolStripMenuItem";
-            this.registerFileAssociationsToolStripMenuItem.Size = new System.Drawing.Size(206, 22);
-            this.registerFileAssociationsToolStripMenuItem.Text = "Register File Associations";
-            this.registerFileAssociationsToolStripMenuItem.Click += new System.EventHandler(this.registerFileAssociationsToolStripMenuItem_Click);
             // 
             // TextEditorWindow
             // 

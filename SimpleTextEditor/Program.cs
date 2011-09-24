@@ -42,6 +42,8 @@ namespace SimpleTextEditor
                 }
             }
 
+            FileAssociationTools.Initialize();
+
             if (registration)
             {
                 FileAssociationTools.HandleFileAssociationRegistration_Elevated(unregister, userSpecific);

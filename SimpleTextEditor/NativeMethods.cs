@@ -126,5 +126,22 @@ namespace SimpleTextEditor
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool ReleaseCapture();
 
+        [DllImport("shell32.dll")]
+        internal static extern void SetCurrentProcessExplicitAppUserModelID(
+            [MarshalAs(UnmanagedType.LPWStr)] string AppID);
+
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode, SetLastError = false)]
+        internal static extern void SHAddToRecentDocs(ShellAddToRecentDocsFlags flag,
+            [MarshalAs(UnmanagedType.LPWStr)] string path);
+
+        [DllImport("shell32.dll", SetLastError = false)]
+        internal static extern void SHAddToRecentDocs(ShellAddToRecentDocsFlags flag, IntPtr pidl);
+
+        internal enum ShellAddToRecentDocsFlags
+        {
+            Pidl = 0x001,
+            Path = 0x003
+        }
+        
     }
 }
