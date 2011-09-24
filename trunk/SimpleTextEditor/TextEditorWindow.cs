@@ -116,7 +116,7 @@ namespace SimpleTextEditor
             {
                 MessageBox.Show(string.Format("{0} may need administrator privileges to register itself as a text editor. Please allow the application to make these changes.", Application.ProductName));
 
-                FileAssociationTools.HandleFileAssociationRegistration(false, true);
+                FileAssociationTools.HandleFileAssociationRegistration_RunAs(false, true);
             }
         }
 
@@ -216,6 +216,8 @@ namespace SimpleTextEditor
 
                     editBox.Modified = false;
 
+                    AddRecent(fullFileName);
+
                     return true;
                 }
                 catch (IOException e)
@@ -234,9 +236,7 @@ namespace SimpleTextEditor
             {
                 if (DoSave(saveFileDialog1.FileName, saveFileDialog1.FilterIndex - 1))
                 {
-                    fileName = Path.GetFileName(saveFileDialog1.FileName);
-                    filePath = saveFileDialog1.FileName.Substring(0, saveFileDialog1.FileName.Length - fileName.Length);
-                    Text = fileName + " - " + Application.ProductName;
+                    SetOpenFilename(saveFileDialog1.FileName);
                     return true;
                 }
             }
@@ -614,20 +614,12 @@ namespace SimpleTextEditor
                         editBox.Text = editBox.Text.Replace("\r", "\r\n");
                     }
                 }
-                if (isUnicode) lastFormat = 2;
 
-                fileName = Path.GetFileName(fullFileName);
-                filePath = fullFileName.Substring(0, fullFileName.Length - fileName.Length);
-                Text = fileName + " - " + Application.ProductName;
+                if (isUnicode)
+                    lastFormat = 2;
 
-                if (appSettings.RecentList.Contains(fullFileName))
-                    appSettings.RecentList.Remove(fullFileName);
-                appSettings.RecentList.Insert(0, fullFileName);
-                while (appSettings.RecentList.Count > appSettings.MaxRecentListSize)
-                    appSettings.RecentList.RemoveAt(appSettings.RecentList.Count - 1);
-                appSettings.Save();
-
-                UpdateRecentList();
+                SetOpenFilename(fullFileName);
+                AddRecent(fullFileName);
 
                 editBox.SelectionStart = 0;
                 editBox.SelectionLength = 0;
@@ -636,6 +628,28 @@ namespace SimpleTextEditor
             {
                 MessageBox.Show("Error opening '" + fullFileName + "':\n" + ex.Message);
             }
+        }
+
+        private void SetOpenFilename(string fullFileName)
+        {
+            fileName = Path.GetFileName(fullFileName);
+            filePath = fullFileName.Substring(0, fullFileName.Length - fileName.Length);
+            Text = fileName + " - " + Application.ProductName;
+        }
+
+        private void AddRecent(string fullFileName)
+        {
+
+            if (appSettings.RecentList.Contains(fullFileName))
+                appSettings.RecentList.Remove(fullFileName);
+            appSettings.RecentList.Insert(0, fullFileName);
+            while (appSettings.RecentList.Count > appSettings.MaxRecentListSize)
+                appSettings.RecentList.RemoveAt(appSettings.RecentList.Count - 1);
+            appSettings.Save();
+
+            NativeMethods.SHAddToRecentDocs(NativeMethods.ShellAddToRecentDocsFlags.Path, fullFileName);
+
+            UpdateRecentList();
         }
 
         private void UpdateRecentList()

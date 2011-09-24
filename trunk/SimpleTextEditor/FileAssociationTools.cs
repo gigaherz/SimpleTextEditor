@@ -5,17 +5,25 @@ using System.ComponentModel;
 using System.IO;
 using System.Windows.Forms;
 using Microsoft.Win32;
+using System.Globalization;
 
 namespace SimpleTextEditor
 {
     static class FileAssociationTools
     {
-        const string AppId = "SimpleTextEditor";
-        const string ProgId = "SimpleTextEditor.TextFile";
+        const string AppId = "Gigaherz.SimpleTextEditor.1";
+        const string ProgId = "Gigaherz.SimpleTextEditor.TextFile.1";
         const string FriendlyTypeName = "@shell32.dll,-8975";
         const string DefaultIcon = "@shell32.dll,-47";
 
+        static string openWith = string.Format(CultureInfo.InvariantCulture, "\"{0}\" \"%1\"", Application.ExecutablePath);
+
         static string[] Extensions = new string[] { ".txt" };
+
+        internal static void Initialize()
+        {
+            NativeMethods.SetCurrentProcessExplicitAppUserModelID(AppId);
+        }
 
         internal static bool CheckFileRegistrations()
         {
@@ -43,12 +51,9 @@ namespace SimpleTextEditor
             }
             return registered;
         }
-        
-        public static bool HandleFileAssociationRegistration(bool unregister, bool userSpecific)
-        {
-            //if (HandleFileAssociationRegistration_Elevated(unregister, userSpecific))
-            //    return true;
 
+        public static bool HandleFileAssociationRegistration_RunAs(bool unregister, bool userSpecific)
+        {
             string method = "";
 
             if (!unregister)
@@ -91,8 +96,6 @@ namespace SimpleTextEditor
         {
             RegistryKey classesRoot;
 
-            string openWith = string.Format("\"{0}\" %1", Application.ExecutablePath);
-
             try
             {
                 if (userSpecific)
@@ -100,21 +103,29 @@ namespace SimpleTextEditor
                 else
                     classesRoot = Registry.LocalMachine.OpenSubKey(@"Software\Classes", true);
 
+                //First of all, unregister:
                 try
                 {
-                    //First of all, unregister:
                     foreach (var e in Extensions)
-                        RegisterFileAssociation(classesRoot, ProgId, e, true);
-                    UnregisterProgId(classesRoot, ProgId);
+                    {
+                        RegisterFileAssociation(classesRoot, e, true);
+                        RegisterApplicationSupportedType(classesRoot, e, true);
+                    }
+                    RegisterProgId(classesRoot, true);
+                    RegisterApplication(true);
                 }
                 catch (Exception)
                 { }
 
                 if (!unregister)
                 {
-                    RegisterProgId(classesRoot, ProgId, AppId, openWith);
-                    foreach(var e in Extensions)
-                        RegisterFileAssociation(classesRoot, ProgId, e, false);
+                    RegisterApplication(false);
+                    RegisterProgId(classesRoot, false);
+                    foreach (var e in Extensions)
+                    {
+                        RegisterFileAssociation(classesRoot, e, false);
+                        RegisterApplicationSupportedType(classesRoot, e, false);
+                    }
                 }
 
                 return true;
@@ -126,38 +137,99 @@ namespace SimpleTextEditor
             return false;
         }
 
-        public static void RegisterFileAssociation(RegistryKey classesRoot, string progId, string extension, bool delete)
+        private static void RegisterFileAssociation(RegistryKey classesRoot, string extension, bool delete)
         {
-            RegistryKey key = classesRoot.CreateSubKey(Path.Combine(extension, "OpenWithProgIds"));
+            try
+            {
+                RegistryKey key = classesRoot.CreateSubKey(Path.Combine(extension, "OpenWithProgIds"));
+                if (delete)
+                    key.DeleteValue(ProgId);
+                else
+                    key.SetValue(ProgId, string.Empty);
+                key.Close();
+            }
+            catch (Exception)
+            {
+                if (!delete)
+                    throw;
+            }
+        }
+
+        private static void RegisterApplication(bool delete)
+        {
+            try
+            {
+                if (delete)
+                {
+
+                    RegistryKey key = Registry.ClassesRoot.OpenSubKey("Applications", true);
+                    key.DeleteSubKeyTree(Path.GetFileName(Application.ExecutablePath));
+                    key.Close();
+                }
+                else
+                {
+                    RegistryKey key = Registry.ClassesRoot.CreateSubKey(Path.Combine("Applications", Path.GetFileName(Application.ExecutablePath), "shell"));
+                    key.SetValue(string.Empty, "open");
+                    RegistryKey openKey = key.CreateSubKey(Path.Combine("open", "command"));
+                    openKey.SetValue(string.Empty, openWith);
+                    openKey.Close();
+                    key.Close();
+                } 
+            }
+            catch (Exception)
+            {
+                if (!delete)
+                    throw;
+            }
+        }
+
+        private static void RegisterApplicationSupportedType(RegistryKey classesRoot, string extension, bool delete)
+        {
+            try
+            {
+                RegistryKey key = Registry.ClassesRoot.CreateSubKey(Path.Combine("Applications", Path.GetFileName(Application.ExecutablePath), "SupportedTypes"));
+                if (delete)
+                    key.DeleteValue(extension);
+                else
+                    key.SetValue(extension, "", RegistryValueKind.String);
+                key.Close();
+            }
+            catch (Exception)
+            {
+                if (!delete)
+                    throw;
+            }
+        }
+
+        private static void RegisterProgId(RegistryKey classesRoot, bool delete)
+        {
             if (delete)
-                key.DeleteValue(progId);
+            {
+                try
+                {
+                    classesRoot.DeleteSubKeyTree(ProgId);
+                }
+                catch (Exception)
+                {
+                }
+            }
             else
-                key.SetValue(progId, string.Empty);
-            key.Close();
+            {
+                RegistryKey progIdKey = classesRoot.CreateSubKey(ProgId);
+                progIdKey.SetValue("FriendlyTypeName", FriendlyTypeName);
+                progIdKey.SetValue("DefaultIcon", DefaultIcon);
+                progIdKey.SetValue("CurVer", ProgId);
+                progIdKey.SetValue("AppUserModelID", AppId);
+
+                RegistryKey shell = progIdKey.CreateSubKey("shell");
+                shell.SetValue(string.Empty, "Open");
+                shell = shell.CreateSubKey("Open");
+                shell = shell.CreateSubKey("Command");
+                shell.SetValue(string.Empty, openWith);
+                shell.Close();
+
+                progIdKey.Close();
+            }
         }
-
-        private static void RegisterProgId(RegistryKey classesRoot, string progId, string appId, string openWith)
-        {
-            RegistryKey progIdKey = classesRoot.CreateSubKey(progId);
-            progIdKey.SetValue("FriendlyTypeName", FriendlyTypeName);
-            progIdKey.SetValue("DefaultIcon", DefaultIcon);
-            progIdKey.SetValue("CurVer", progId);
-            progIdKey.SetValue("AppUserModelID", appId);
-
-            RegistryKey shell = progIdKey.CreateSubKey("shell");
-            shell.SetValue(string.Empty, "Open");
-            shell = shell.CreateSubKey("Open");
-            shell = shell.CreateSubKey("Command");
-            shell.SetValue(string.Empty, openWith);
-            shell.Close();
-
-            progIdKey.Close();
-        }
-
-        public static void UnregisterProgId(RegistryKey classesRoot, string progId)
-        {
-            classesRoot.DeleteSubKeyTree(progId);
-        }
-
     }
 }
