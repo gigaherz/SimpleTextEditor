@@ -1,0 +1,1 @@
+SimpleTextEditor is a basic text editor with a compact interface (no menus), intended to be a more modern alternative to the classic Notepad, with just about the same functionality, and no unnecessary bloat.
