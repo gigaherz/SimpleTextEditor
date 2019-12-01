@@ -1,42 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Drawing;
-using System.Text;
 using System.Windows.Forms;
+using SimpleTextEditor.Properties;
 
 namespace SimpleTextEditor
 {
     partial class DropDownHistoryBox : Form
     {
-        private string historyClassText = "Undo";
-
-        public string HistoryClassText
-        {
-            get { return historyClassText; }
-            set { historyClassText = value; }
-        }
-
-        private List<object> history;
-
-        public List<object> HistoryItems
-        {
-            get { return history; }
-            set { history = value; }
-        }
-
-        private int lastSelected;
-
-        public int LastSelected
-        {
-            get { return lastSelected; }
-            set { lastSelected = value; }
-        }
+        public string HistoryClassText { get; set; }
+        public List<object> HistoryItems { get; set; }
+        public int LastSelected { get; set; }
 
         public event EventHandler ItemClick;
 
         public DropDownHistoryBox()
         {
+            HistoryClassText = @"Undo";
             InitializeComponent();
         }
 
@@ -50,51 +29,48 @@ namespace SimpleTextEditor
         {
             listBox1.SelectedItems.Clear();
 
-            lastSelected = listBox1.TopIndex + (int)Math.Ceiling(e.Y / (double)listBox1.ItemHeight) - 1;
+            LastSelected = listBox1.TopIndex + (int)Math.Ceiling(e.Y / (double)listBox1.ItemHeight) - 1;
 
-            for (int i = 0; i <= lastSelected; i++)
+            for (int i = 0; i <= LastSelected; i++)
             {
                 listBox1.SelectedItems.Add(listBox1.Items[i]);
             }
-            label1.Text = historyClassText + " " + (lastSelected + 1) + " Actions.";
+            label1.Text = string.Format(Resources.HistoryBoxLabel, HistoryClassText, LastSelected + 1);
         }
 
         private void listBox1_Click(object sender, EventArgs e)
         {
-            this.DialogResult = DialogResult.OK;
-            this.Close();
-            ItemClick(this, EventArgs.Empty);
+            DialogResult = DialogResult.OK;
+            Close();
+
+            if(ItemClick != null)
+                ItemClick(this, EventArgs.Empty);
         }
 
         private void DropDownHistoryBox_Load(object sender, EventArgs e)
         {
             listBox1.Items.Clear();
-            foreach (object t in history)
+
+            foreach (var t in HistoryItems)
             {
                 listBox1.Items.Add(t);
             }
 
-            if (listBox1.Items.Count < 12)
-            {
-                listBox1.Height = listBox1.Items.Count * listBox1.ItemHeight;
-            }
-            else
-            {
-                listBox1.Height = 12 * listBox1.ItemHeight;
-            }
-            this.Height = (this.Height - this.ClientSize.Height) + listBox1.Height + 32;
+            listBox1.Height = Math.Min(12, listBox1.Items.Count) * listBox1.ItemHeight;
+
+            Height = (Height - ClientSize.Height) + listBox1.Height + 32;
         }
 
         private void DropDownHistoryBox_Click(object sender, EventArgs e)
         {
-            this.DialogResult = DialogResult.Cancel;
-            this.Close();
+            DialogResult = DialogResult.Cancel;
+            Close();
         }
 
         private void label1_Click(object sender, EventArgs e)
         {
-            this.DialogResult = DialogResult.Cancel;
-            this.Close();
+            DialogResult = DialogResult.Cancel;
+            Close();
         }
 
         private void DropDownHistoryBox_Deactivate(object sender, EventArgs e)

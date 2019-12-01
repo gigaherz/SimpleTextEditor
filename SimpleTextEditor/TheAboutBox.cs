@@ -1,11 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Drawing;
+using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
 using System.Drawing.Imaging;
 using System.Drawing.Drawing2D;
+using SimpleTextEditor.Properties;
 
 namespace SimpleTextEditor
 {
@@ -23,7 +23,7 @@ namespace SimpleTextEditor
         }
 
         private void Form1_MouseDown(object sender, 
-                System.Windows.Forms.MouseEventArgs e)
+                MouseEventArgs e)
         {     
             if (e.Button == MouseButtons.Left)
             {
@@ -36,10 +36,10 @@ namespace SimpleTextEditor
         {
             InitializeComponent();
 
-            this.labelTitle.Text = String.Format("About {0}", AssemblyTitle);
-            this.labelVersion.Text = String.Format("Version {0}", Application.ProductVersion);
-            this.labelCopyright.Text = AssemblyCopyright;
-            this.labelDescription.Text = AssemblyDescription;
+            labelTitle.Text = String.Format(Resources.AboutText, AssemblyTitle);
+            labelVersion.Text = String.Format(Resources.VersionText, Application.ProductVersion);
+            labelCopyright.Text = AssemblyCopyright;
+            labelDescription.Text = AssemblyDescription;
         }
 
         #region Assembly Attribute Accessors
@@ -48,16 +48,14 @@ namespace SimpleTextEditor
         {
             get
             {
-                object[] attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyTitleAttribute), false);
+                var attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyTitleAttribute), false);
                 if (attributes.Length > 0)
                 {
-                    AssemblyTitleAttribute titleAttribute = (AssemblyTitleAttribute)attributes[0];
+                    var titleAttribute = (AssemblyTitleAttribute)attributes[0];
                     if (titleAttribute.Title.Length > 0)
-                    {
                         return titleAttribute.Title;
-                    }
                 }
-                return System.IO.Path.GetFileNameWithoutExtension(Assembly.GetExecutingAssembly().CodeBase);
+                return Path.GetFileNameWithoutExtension(Assembly.GetExecutingAssembly().CodeBase);
             }
         }
 
@@ -65,11 +63,10 @@ namespace SimpleTextEditor
         {
             get
             {
-                object[] attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyDescriptionAttribute), false);
+                var attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyDescriptionAttribute), false);
                 if (attributes.Length == 0)
-                {
                     return "";
-                }
+
                 return ((AssemblyDescriptionAttribute)attributes[0]).Description;
             }
         }
@@ -78,52 +75,53 @@ namespace SimpleTextEditor
         {
             get
             {
-                object[] attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyCopyrightAttribute), false);
+                var attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyCopyrightAttribute), false);
                 if (attributes.Length == 0)
-                {
                     return "";
-                }
+
                 return ((AssemblyCopyrightAttribute)attributes[0]).Copyright;
             }
         }
         #endregion
 
+        #region Bitmap
         /// <para>Changes the current bitmap.</para>
         public void SetBitmap(Bitmap bitmap)
         {
             SetBitmap(bitmap, 255);
         }
-
-
+        
         /// <para>Changes the current bitmap with a custom opacity level.  Here is where all happens!</para>
-        public void SetBitmap(Bitmap bitmap, byte opacity)
+        private void SetBitmap(Bitmap bitmap, byte opacity)
         {
             if (bitmap.PixelFormat != PixelFormat.Format32bppArgb)
-                throw new ApplicationException("The bitmap must be 32ppp with alpha-channel.");
+                throw new ApplicationException(@"The bitmap must be 32ppp with alpha-channel.");
 
             // The ideia of this is very simple,
             // 1. Create a compatible DC with screen;
             // 2. Select the bitmap with 32bpp with alpha-channel in the compatible DC;
             // 3. Call the UpdateLayeredWindow.
 
-            IntPtr screenDc = NativeMethods.GetDC(IntPtr.Zero);
-            IntPtr memDc = NativeMethods.CreateCompatibleDC(screenDc);
-            IntPtr hBitmap = IntPtr.Zero;
-            IntPtr oldBitmap = IntPtr.Zero;
+            var screenDc = NativeMethods.GetDC(IntPtr.Zero);
+            var memDc = NativeMethods.CreateCompatibleDC(screenDc);
+            var hBitmap = IntPtr.Zero;
+            var oldBitmap = IntPtr.Zero;
 
             try
             {
                 hBitmap = bitmap.GetHbitmap(Color.FromArgb(0));  // grab a GDI handle from this GDI+ bitmap
                 oldBitmap = NativeMethods.SelectObject(memDc, hBitmap);
 
-                NativeMethods.Size size = new NativeMethods.Size(bitmap.Width, bitmap.Height);
-                NativeMethods.Point pointSource = new NativeMethods.Point(0, 0);
-                NativeMethods.Point topPos = new NativeMethods.Point(Left, Top);
-                NativeMethods.BLENDFUNCTION blend = new NativeMethods.BLENDFUNCTION();
-                blend.BlendOp = NativeMethods.AC_SRC_OVER;
-                blend.BlendFlags = 0;
-                blend.SourceConstantAlpha = opacity;
-                blend.AlphaFormat = NativeMethods.AC_SRC_ALPHA;
+                var size = new NativeMethods.Size(bitmap.Width, bitmap.Height);
+                var pointSource = new NativeMethods.Point(0, 0);
+                var topPos = new NativeMethods.Point(Left, Top);
+                var blend = new NativeMethods.BLENDFUNCTION
+                                {
+                                    BlendOp = NativeMethods.AC_SRC_OVER,
+                                    BlendFlags = 0,
+                                    SourceConstantAlpha = opacity,
+                                    AlphaFormat = NativeMethods.AC_SRC_ALPHA
+                                };
 
                 NativeMethods.UpdateLayeredWindow(Handle, screenDc, ref topPos, ref size, memDc, ref pointSource, 0, ref blend, NativeMethods.ULW_ALPHA);
             }
@@ -133,19 +131,20 @@ namespace SimpleTextEditor
                 if (hBitmap != IntPtr.Zero)
                 {
                     NativeMethods.SelectObject(memDc, oldBitmap);
-                    //Windows.DeleteObject(hBitmap); // The documentation says that we have to use the Windows.DeleteObject... but since there is no such method I use the normal DeleteObject from Win32 GDI and it's working fine without any resource leak.
                     NativeMethods.DeleteObject(hBitmap);
                 }
                 NativeMethods.DeleteDC(memDc);
             }
         }
+        #endregion
 
-        public static void SetRegionTransparentBitmap(Control control, Bitmap bitmap)
+        #region Region from bitmap
+        private static void SetRegionTransparentBitmap(Control control, Bitmap bitmap)
         {
             if (control == null || bitmap == null)
                 return;
 
-            GraphicsPath graphicsPath = CalculateControlGraphicsPathAlpha(bitmap);
+            var graphicsPath = CalculateControlGraphicsPathAlpha(bitmap);
 
             if (control is Form)
                 (control as Form).FormBorderStyle = FormBorderStyle.None;
@@ -162,37 +161,36 @@ namespace SimpleTextEditor
 
         private static GraphicsPath CalculateControlGraphicsPathAlpha(Bitmap bitmap)
         {
-            const int AlphaThreshold = 255;
+            const int alphaThreshold = 255;
 
-            GraphicsPath graphicsPath = new GraphicsPath();
+            var graphicsPath = new GraphicsPath();
 
-            int colOpaquePixel = 0;
             for (int row = 0; row < bitmap.Height; row++)
             {
-                colOpaquePixel = 0;
-
                 for (int col = 0; col < bitmap.Width; col++)
                 {
-                    if (bitmap.GetPixel(col, row).A >= AlphaThreshold)
+                    if (bitmap.GetPixel(col, row).A < alphaThreshold) 
+                        continue;
+
+                    var colOpaquePixel = col;
+
+                    int colNext;
+
+                    for (colNext = colOpaquePixel; colNext < bitmap.Width; colNext++)
                     {
-                        colOpaquePixel = col;
-
-                        int colNext = col;
-
-                        for (colNext = colOpaquePixel; colNext < bitmap.Width; colNext++)
-                        {
-                            if (bitmap.GetPixel(colNext, row).A < AlphaThreshold)
-                                break;
-                        }
-
-                        graphicsPath.AddRectangle(new Rectangle(colOpaquePixel, row, colNext - colOpaquePixel, 1));
-                        col = colNext;
+                        if (bitmap.GetPixel(colNext, row).A < alphaThreshold)
+                            break;
                     }
+
+                    graphicsPath.AddRectangle(new Rectangle(colOpaquePixel, row, colNext - colOpaquePixel, 1));
+
+                    col = colNext;
                 }
             }
 
             return graphicsPath;
         }
+        #endregion
 
         private void TheAboutBox_Load(object sender, EventArgs e)
         {
@@ -201,7 +199,7 @@ namespace SimpleTextEditor
 
         private void TheAboutBox_Shown(object sender, EventArgs e)
         {
-            SetRegionTransparentBitmap(this, Properties.Resources.AboutBoxBackground);
+            SetRegionTransparentBitmap(this, Resources.AboutBoxBackground);
             //SetBitmap(Properties.Resources.AboutBackground);
             Refresh();
         }
@@ -209,18 +207,17 @@ namespace SimpleTextEditor
         protected override void OnControlAdded(ControlEventArgs e)
         {
             if (e.Control is Label)
-            {
-                e.Control.MouseDown += new MouseEventHandler(theLabel_MouseDown);
-            }
+                e.Control.MouseDown += theLabel_MouseDown;
+
             base.OnControlAdded(e);
         }
 
         private void theLabel_MouseDown(object sender, MouseEventArgs e)
         {
-            int xTrans = e.X + this.Location.X;
-            int yTrans = e.Y + this.Location.Y;
-            MouseEventArgs eTrans = new MouseEventArgs(e.Button, e.Clicks, xTrans, yTrans, e.Delta);
-            this.OnMouseDown(eTrans);
+            var xTrans = e.X + Location.X;
+            var yTrans = e.Y + Location.Y;
+            var eTrans = new MouseEventArgs(e.Button, e.Clicks, xTrans, yTrans, e.Delta);
+            OnMouseDown(eTrans);
         }
     }
 }

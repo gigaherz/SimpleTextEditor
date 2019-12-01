@@ -1,0 +1,14 @@
+/.vs
+/STEInstaller/Debug
+/STEInstaller/Release
+/SimpleTextEditor/*.ReSharper
+/SimpleTextEditor/bin
+/SimpleTextEditor/obj
+/SimpleTextEditor/publish
+/_ReSharper.SimpleTextEditor
+
+*.user
+*.suo
+
+/UpgradeLog.htm
+/Analysis.ruleset

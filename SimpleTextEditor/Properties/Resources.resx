@@ -121,4 +121,54 @@
   <data name="AboutBoxBackground" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\AboutBackground.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="ModifiedSavePrompt">
+    <value xml:space="preserve">The text has been modified. Do you want to save before continuing?</value>
+  </data>
+  <data name="AttentionMessageTitle">
+    <value xml:space="preserve">Attention</value>
+  </data>
+  <data name="AdminPrivilegesNeeded">
+    <value xml:space="preserve">{0} may need administrator privileges to register itself as a text editor. Please allow the application to make these changes.</value>
+  </data>
+  <data name="UntitledDocumentTitlebarText">
+    <value xml:space="preserve">untitled</value>
+  </data>
+  <data name="ErrorSavingMessage">
+    <value xml:space="preserve">Error saving '{0}': {1}
+</value>
+  </data>
+  <data name="LineColumnStatusbar">
+    <value xml:space="preserve">Ln. {0} Col. {1}</value>
+  </data>
+  <data name="ErrorOpeningMessage">
+    <value xml:space="preserve">Error opening '{0}': {1}
+</value>
+  </data>
+  <data name="HistoryBoxLabel">
+    <value xml:space="preserve">{0} {1} Actions.</value>
+  </data>
+  <data name="EndOfSelectedAreaPrompt">
+    <value xml:space="preserve">Reached the end of the selected area.
+Do you want to expand the search to the rest of the document?</value>
+  </data>
+  <data name="SearchReplaceTitle">
+    <value xml:space="preserve">Search &amp; Replace</value>
+  </data>
+  <data name="EndOfSelectionPrompt">
+    <value xml:space="preserve">Reached the end of the selection.
+Do you want to continue from the beginning?</value>
+  </data>
+  <data name="EndOfDocumentPrompt">
+    <value xml:space="preserve">Reached the end of the document.
+Do you want to continue from the beginning?</value>
+  </data>
+  <data name="ReplaceAllFinishedMessage">
+    <value xml:space="preserve">Replace All finished. Replaced {0} matches.</value>
+  </data>
+  <data name="AboutText">
+    <value xml:space="preserve">About {0}</value>
+  </data>
+  <data name="VersionText">
+    <value xml:space="preserve">Version {0}</value>
+  </data>
 </root>

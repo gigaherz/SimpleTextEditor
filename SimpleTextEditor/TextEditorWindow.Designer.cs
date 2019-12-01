@@ -599,7 +599,8 @@
             this.editBox.Size = new System.Drawing.Size(788, 492);
             this.editBox.TabIndex = 5;
             this.editBox.WordWrap = false;
-            this.editBox.Click += new System.EventHandler(this.editBox_Click_1);
+            this.editBox.Click += new System.EventHandler(this.editBox_Click);
+            this.editBox.TextChanged += new System.EventHandler(this.editBox_TextChanged);
             this.editBox.DragDrop += new System.Windows.Forms.DragEventHandler(this.editBox_DragDrop);
             this.editBox.DragEnter += new System.Windows.Forms.DragEventHandler(this.editBox_DragEnter);
             this.editBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.editBox_KeyDown);

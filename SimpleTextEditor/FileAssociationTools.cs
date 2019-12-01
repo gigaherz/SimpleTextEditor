@@ -1,8 +1,9 @@
-﻿
-using System;
-using System.Diagnostics;
+﻿using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Security;
 using System.Windows.Forms;
 using Microsoft.Win32;
 using System.Globalization;
@@ -16,9 +17,9 @@ namespace SimpleTextEditor
         const string FriendlyTypeName = "@shell32.dll,-8975";
         const string DefaultIcon = "@shell32.dll,-47";
 
-        static string openWith = string.Format(CultureInfo.InvariantCulture, "\"{0}\" \"%1\"", Application.ExecutablePath);
+        static readonly string OpenWith = string.Format(CultureInfo.InvariantCulture, "\"{0}\" \"%1\"", Application.ExecutablePath);
 
-        static string[] Extensions = new string[] { ".txt" };
+        static readonly string[] Extensions = new[] { @".txt" };
 
         internal static void Initialize()
         {
@@ -27,55 +28,51 @@ namespace SimpleTextEditor
 
         internal static bool CheckFileRegistrations()
         {
-            foreach (var s in Extensions)
-            {
-                if (!CheckFileRegistration(s))
-                    return false;
-            }
-            return true;
+            return Extensions.All(CheckFileRegistration);
         }
 
         public static bool CheckFileRegistration(string extension)
         {
-            bool registered = false;
-
             try
             {
-                RegistryKey openWithKey = Registry.ClassesRoot.OpenSubKey(Path.Combine(extension, "OpenWithProgIds"));
-                string value = openWithKey.GetValue(ProgId, null) as string;
+                var openWithKey = Registry.ClassesRoot.OpenSubKey(Path.Combine(extension, @"OpenWithProgIds"));
+                
+                if (openWithKey == null)
+                    return false;
 
-                registered = (value != null);
+                var value = openWithKey.GetValue(ProgId, null) as string;
+
+                return (value != null);
             }
-            finally
+            catch(SecurityException)
             {
             }
-            return registered;
+
+            return false;
         }
 
         public static bool HandleFileAssociationRegistration_RunAs(bool unregister, bool userSpecific)
         {
-            string method = "";
+            string method;
 
             if (!unregister)
             {
-                if (userSpecific)
-                    method = "/RegisterUser";
-                else
-                    method = "/RegisterSystem";
+                method = userSpecific ? @"/RegisterUser" : @"/RegisterSystem";
             }
             else
             {
-                if (userSpecific)
-                    method = "/UnregisterUser";
-                else
-                    method = "/UnregisterSystem";
+                method = userSpecific ? @"/UnregisterUser" : @"/UnregisterSystem";
             }
 
-            ProcessStartInfo psi = new ProcessStartInfo(Application.ExecutablePath);
-            psi.Arguments = method;
-            psi.UseShellExecute = true;
-            psi.Verb = "runas"; //Launch elevated
-            psi.WindowStyle = ProcessWindowStyle.Hidden;
+            var psi = new ProcessStartInfo(Application.ExecutablePath)
+                          {
+                              Arguments = method,
+                              UseShellExecute = true,
+                              Verb = "runas",
+                              WindowStyle = ProcessWindowStyle.Hidden
+                          };
+
+            //Launch elevated
 
             try
             {
@@ -85,7 +82,7 @@ namespace SimpleTextEditor
 
                 return true;
             }
-            catch (Exception)
+            catch (Win32Exception)
             {
             }
 
@@ -94,14 +91,11 @@ namespace SimpleTextEditor
 
         public static bool HandleFileAssociationRegistration_Elevated(bool unregister, bool userSpecific)
         {
-            RegistryKey classesRoot;
-
             try
             {
-                if (userSpecific)
-                    classesRoot = Registry.CurrentUser.OpenSubKey(@"Software\Classes", true);
-                else
-                    classesRoot = Registry.LocalMachine.OpenSubKey(@"Software\Classes", true);
+                var root = userSpecific ? Registry.CurrentUser : Registry.LocalMachine;
+                
+                var classesRoot = root.OpenSubKey(@"Software\Classes", true);
 
                 //First of all, unregister:
                 try
@@ -141,12 +135,20 @@ namespace SimpleTextEditor
         {
             try
             {
-                RegistryKey key = classesRoot.CreateSubKey(Path.Combine(extension, "OpenWithProgIds"));
-                if (delete)
-                    key.DeleteValue(ProgId);
+                var key = classesRoot.CreateSubKey(Path.Combine(extension, "OpenWithProgIds"));
+                if (key != null)
+                {
+                    if (delete)
+                        key.DeleteValue(ProgId);
+                    else
+                        key.SetValue(ProgId, string.Empty);
+
+                    key.Close();
+                }
                 else
-                    key.SetValue(ProgId, string.Empty);
-                key.Close();
+                {
+                    Debug.Assert(delete);
+                }
             }
             catch (Exception)
             {
@@ -162,18 +164,27 @@ namespace SimpleTextEditor
                 if (delete)
                 {
 
-                    RegistryKey key = Registry.ClassesRoot.OpenSubKey("Applications", true);
-                    key.DeleteSubKeyTree(Path.GetFileName(Application.ExecutablePath));
-                    key.Close();
+                    var key = Registry.ClassesRoot.OpenSubKey("Applications", true);
+                    if (key != null)
+                    {
+                        key.DeleteSubKeyTree(Path.GetFileName(Application.ExecutablePath));
+                        key.Close();
+                    }
                 }
                 else
                 {
-                    RegistryKey key = Registry.ClassesRoot.CreateSubKey(Path.Combine("Applications", Path.GetFileName(Application.ExecutablePath), "shell"));
-                    key.SetValue(string.Empty, "open");
-                    RegistryKey openKey = key.CreateSubKey(Path.Combine("open", "command"));
-                    openKey.SetValue(string.Empty, openWith);
-                    openKey.Close();
-                    key.Close();
+                    var key = Registry.ClassesRoot.CreateSubKey(Path.Combine(@"Applications", Path.GetFileName(Application.ExecutablePath), @"shell"));
+                    if (key != null)
+                    {
+                        key.SetValue(string.Empty, @"open");
+                        var openKey = key.CreateSubKey(Path.Combine("open", "command"));
+                        if (openKey != null)
+                        {
+                            openKey.SetValue(string.Empty, OpenWith);
+                            openKey.Close();
+                        }
+                        key.Close();
+                    }
                 } 
             }
             catch (Exception)
@@ -187,12 +198,19 @@ namespace SimpleTextEditor
         {
             try
             {
-                RegistryKey key = Registry.ClassesRoot.CreateSubKey(Path.Combine("Applications", Path.GetFileName(Application.ExecutablePath), "SupportedTypes"));
-                if (delete)
-                    key.DeleteValue(extension);
+                RegistryKey key = Registry.ClassesRoot.CreateSubKey(Path.Combine(@"Applications", Path.GetFileName(Application.ExecutablePath), @"SupportedTypes"));
+                if (key != null)
+                {
+                    if (delete)
+                        key.DeleteValue(extension);
+                    else
+                        key.SetValue(extension, string.Empty);
+                    key.Close();
+                }
                 else
-                    key.SetValue(extension, "", RegistryValueKind.String);
-                key.Close();
+                {
+                    Debug.Assert(delete);
+                }
             }
             catch (Exception)
             {
@@ -215,20 +233,34 @@ namespace SimpleTextEditor
             }
             else
             {
-                RegistryKey progIdKey = classesRoot.CreateSubKey(ProgId);
-                progIdKey.SetValue("FriendlyTypeName", FriendlyTypeName);
-                progIdKey.SetValue("DefaultIcon", DefaultIcon);
-                progIdKey.SetValue("CurVer", ProgId);
-                progIdKey.SetValue("AppUserModelID", AppId);
+                var progIdKey = classesRoot.CreateSubKey(ProgId);
+                if (progIdKey != null)
+                {
+                    progIdKey.SetValue(@"FriendlyTypeName", FriendlyTypeName);
+                    progIdKey.SetValue(@"DefaultIcon", DefaultIcon);
+                    progIdKey.SetValue(@"CurVer", ProgId);
+                    progIdKey.SetValue(@"AppUserModelID", AppId);
 
-                RegistryKey shell = progIdKey.CreateSubKey("shell");
-                shell.SetValue(string.Empty, "Open");
-                shell = shell.CreateSubKey("Open");
-                shell = shell.CreateSubKey("Command");
-                shell.SetValue(string.Empty, openWith);
-                shell.Close();
+                    var shell = progIdKey.CreateSubKey(@"shell");
+                    if (shell != null)
+                    {
+                        shell.SetValue(string.Empty, @"Open");
 
-                progIdKey.Close();
+                        var open = shell.CreateSubKey(@"Open");
+                        if (open != null)
+                        {
+                            var command = open.CreateSubKey(@"Command");
+                            if (command != null)
+                            {
+                                command.SetValue(string.Empty, OpenWith);
+                                command.Close();
+                            }
+                            open.Close();
+                        }
+                        shell.Close();
+                    }
+                    progIdKey.Close();
+                }
             }
         }
     }

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Windows.Forms;
 
 namespace SimpleTextEditor
@@ -12,33 +11,30 @@ namespace SimpleTextEditor
         [STAThread]
         static void Main(string[] args)
         {
-            bool registration = false;
-            bool unregister = false;
-            bool userSpecific = false;
+            var registration = false;
+            var unregister = false;
+            var userSpecific = false;
 
             if (args.Length > 0)
             {
-                if (args[0] == "/RegisterUser")
+                switch (args[0])
                 {
-                    registration = true;
-                    userSpecific = true;
-                }
-                else if (args[0] == "/RegisterSystem")
-                {
-                    registration = true;
-                    userSpecific = true;
-                }
-                else if (args[0] == "/UnregisterUser")
-                {
-                    registration = true;
-                    unregister = true;
-                    userSpecific = true;
-                }
-                else if (args[0] == "/UnregisterSystem")
-                {
-                    registration = true;
-                    unregister = true;
-                    userSpecific = true;
+                    case @"/RegisterUser":
+                        registration = true;
+                        userSpecific = true;
+                        break;
+                    case @"/RegisterSystem":
+                        registration = true;
+                        break;
+                    case @"/UnregisterUser":
+                        registration = true;
+                        unregister = true;
+                        userSpecific = true;
+                        break;
+                    case @"/UnregisterSystem":
+                        registration = true;
+                        unregister = true;
+                        break;
                 }
             }
 

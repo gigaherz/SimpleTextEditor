@@ -6,6 +6,7 @@ using System.Text;
 using System.Windows.Forms;
 using System.IO;
 using System.Drawing.Printing;
+using SimpleTextEditor.Properties;
 
 #if ENABLE_JUMP_LISTS
 using Microsoft.WindowsAPICodePack.Taskbar;
@@ -17,61 +18,32 @@ namespace SimpleTextEditor
     {
         private class HistoryItem
         {
-            private string itemType;
-
-            public string UndoType
-            {
-                get { return itemType; }
-                set { itemType = value; }
-            }
-
-            private string itemText;
-
-            public string Text
-            {
-                get { return itemText; }
-                set { itemText = value; }
-            }
-
-            private int start;
-
-            public int Start
-            {
-                get { return start; }
-                set { start = value; }
-            }
-
-            private int length;
-
-            public int Length
-            {
-                get { return length; }
-                set { length = value; }
-            }
+            public string UndoType { get; private set; }
+            public string Text { get; set; }
+            public int Start { get; set; }
+            public int Length { get; set; }
 
             public HistoryItem(string type, string text, int first, int count)
             {
-                itemType = type;
-                itemText = text;
-                start = first;
-                length = count;
+                UndoType = type;
+                Text = text;
+                Start = first;
+                Length = count;
             }
 
             public override string ToString()
             {
-                if ((!string.IsNullOrEmpty(itemText)) && (itemText.Length < 32))
-                {
-                    return itemType + " \"" + itemText + "\"";
-                }
-                else if (!string.IsNullOrEmpty(itemText))
-                {
-                    return itemType + " \"" + itemText.Substring(0, 30) + "[...]\"";
-                }
-                return itemType;
+                if ((!string.IsNullOrEmpty(Text)) && (Text.Length < 32))
+                    return string.Format("{0} '{1}'", UndoType, Text);
+
+                if (!string.IsNullOrEmpty(Text))
+                    return string.Format("{0} '{1}[...]'", UndoType, Text.Substring(0, 30));
+
+                return UndoType;
             }
         }
         
-        Properties.Settings appSettings;
+        Settings appSettings;
 
         string filePath;
         string fileName;
@@ -82,7 +54,7 @@ namespace SimpleTextEditor
 
         string searchFor;
         int searchStart;
-        bool searchCase = false;
+        bool searchCase;
 
         List<ToolStripMenuItem> recentList;
 
@@ -91,7 +63,7 @@ namespace SimpleTextEditor
 
         List<HistoryItem> redoHistoryItems;
 
-        string[] cmdLineArgs;
+        readonly string[] cmdLineArgs;
 
         Size unmaximizedSize;
 
@@ -114,7 +86,7 @@ namespace SimpleTextEditor
         {
             if (!FileAssociationTools.HandleFileAssociationRegistration_Elevated(false, true))
             {
-                MessageBox.Show(string.Format("{0} may need administrator privileges to register itself as a text editor. Please allow the application to make these changes.", Application.ProductName));
+                MessageBox.Show(string.Format(Resources.AdminPrivilegesNeeded, Application.ProductName));
 
                 FileAssociationTools.HandleFileAssociationRegistration_RunAs(false, true);
             }
@@ -145,18 +117,13 @@ namespace SimpleTextEditor
             DoUndo(1);
         }
 
-        private void toolStripButton2_Click(object sender, EventArgs e)
-        {
-            editBox.Undo();
-        }
-
         private void newToolStripButton_Click(object sender, EventArgs e)
         {
             if (!AskSave())
                 return;
             filePath = "";
             fileName = "";
-            Text = "(untitled) - " + Application.ProductName;
+            Text = string.Format("({0}) - {1}", Resources.UntitledDocumentTitlebarText, Application.ProductName);
             editBox.Text = "";
 
             historyItems.Clear();
@@ -173,7 +140,12 @@ namespace SimpleTextEditor
             if ((editBox.TextLength == 0) && (fileName.Length == 0))
                 return true;
 
-            DialogResult result = MessageBox.Show("The text has been modified. Do you want to save before continuing?", "Attention", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1);
+            var result = MessageBox.Show(Resources.ModifiedSavePrompt,
+                                         Resources.AttentionMessageTitle, 
+                                         MessageBoxButtons.YesNoCancel, 
+                                         MessageBoxIcon.Question, 
+                                         MessageBoxDefaultButton.Button1);
+
             if (result == DialogResult.Cancel)
                 return false;
 
@@ -186,45 +158,41 @@ namespace SimpleTextEditor
         private bool DoSave(string fullFileName, int saveFormat)
         {
             if (fullFileName.Length == 0)
-            {
                 return DoSaveAs();
-            }
-            else
+
+            try
             {
-                try
+                var encoding = Encoding.ASCII;
+                var text = editBox.Text;
+
+                if (saveFormat == 1)
                 {
-                    Encoding encoding = Encoding.ASCII;
-                    string text = editBox.Text;
-
-                    if (saveFormat == 1)
-                    {
-                        // unix
-                        text = editBox.Text.Replace("\r\n", "\n");
-                    }
-
-                    if (saveFormat == 2)
-                    {
-                        encoding = Encoding.UTF8;
-                    }
-
-                    using (StreamWriter wrt = new StreamWriter(new FileStream(fullFileName, FileMode.Create, FileAccess.Write, FileShare.None), encoding))
-                    {
-                        wrt.Write(text);
-                    }
-
-                    lastFormat = saveFormat;
-
-                    editBox.Modified = false;
-
-                    AddRecent(fullFileName);
-
-                    return true;
+                    // unix
+                    text = editBox.Text.Replace("\r\n", "\n");
                 }
-                catch (IOException e)
+
+                if (saveFormat == 2)
                 {
-                    MessageBox.Show("Error saving '" + saveFileDialog1.FileName + "':\n" + e.Message);
-                    return false;
+                    encoding = Encoding.UTF8;
                 }
+
+                using (var wrt = new StreamWriter(new FileStream(fullFileName, FileMode.Create, FileAccess.Write, FileShare.None), encoding))
+                {
+                    wrt.Write(text);
+                }
+
+                lastFormat = saveFormat;
+
+                editBox.Modified = false;
+
+                AddRecent(fullFileName);
+
+                return true;
+            }
+            catch (IOException e)
+            {
+                MessageBox.Show(string.Format(Resources.ErrorSavingMessage, saveFileDialog1.FileName, e.Message));
+                return false;
             }
         }
 
@@ -245,7 +213,7 @@ namespace SimpleTextEditor
 
         private void TextEditorWindow_Load(object sender, EventArgs e)
         {
-            appSettings = new SimpleTextEditor.Properties.Settings();
+            appSettings = new Settings();
             appSettings.Reload();
 
             filePath = "";
@@ -286,14 +254,14 @@ namespace SimpleTextEditor
             if (appSettings.WindowSizeSaved)
             {
                 if ((appSettings.WindowSizeWidth > 0) && (appSettings.WindowSizeHeight > 0))
-                    this.Size = new Size(appSettings.WindowSizeWidth,appSettings.WindowSizeHeight);
+                    Size = new Size(appSettings.WindowSizeWidth,appSettings.WindowSizeHeight);
             }
 
-            unmaximizedSize = this.Size;
+            unmaximizedSize = Size;
 
             // show the window before starting to load the data
-            this.Visible = true;
-            this.Refresh();
+            Visible = true;
+            Refresh();
 
             if (cmdLineArgs.Length > 0)
             {
@@ -311,7 +279,7 @@ namespace SimpleTextEditor
 
         private void helpToolStripButton_Click(object sender, EventArgs e)
         {
-            TheAboutBox aboutBox = new TheAboutBox();
+            var aboutBox = new TheAboutBox();
             aboutBox.ShowDialog();
         }
 
@@ -412,8 +380,8 @@ namespace SimpleTextEditor
 
         private void printDocument1_PrintPage(object sender, PrintPageEventArgs e)
         {
-            int charactersOnPage = 0;
-            int linesPerPage = 0;
+            int charactersOnPage;
+            int linesPerPage;
 
             // Sets the value of charactersOnPage to the number of characters 
             // of stringToPrint that will fit within the bounds of the page.
@@ -442,7 +410,7 @@ namespace SimpleTextEditor
             int ln = editBox.GetLineFromCharIndex(editBox.SelectionStart);
             int col = editBox.SelectionStart - editBox.GetFirstCharIndexOfCurrentLine();
 
-            lblPosition.Text = "Ln. " + (ln + 1).ToString() + " Col. " + (col + 1).ToString();
+            lblPosition.Text = string.Format(Resources.LineColumnStatusbar, ln + 1, col + 1);
         }
 
         private void mruToolStripMenuItem_Click(object sender, EventArgs e)
@@ -485,12 +453,13 @@ namespace SimpleTextEditor
             }
         }
 
+/*
         private void textBox1_DragEnter(object sender, DragEventArgs e)
         {
             e.Effect = DragDropEffects.None;
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
-                string[] fileDrop = (string[])e.Data.GetData(DataFormats.FileDrop, false);
+                var fileDrop = (string[])e.Data.GetData(DataFormats.FileDrop, false);
                 if (fileDrop.Length != 1)
                     return;
 
@@ -568,6 +537,7 @@ namespace SimpleTextEditor
                 e.Effect = (DragDropEffects.Copy | DragDropEffects.Move) & e.AllowedEffect;
             }
         }
+*/
 
         private void DoOpenFile(string fullFileName)
         {
@@ -575,7 +545,7 @@ namespace SimpleTextEditor
             {
                 byte[] bytes;
 
-                using (FileStream stream = new FileStream(fullFileName, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (var stream = new FileStream(fullFileName, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
                     bytes = new byte[stream.Length];
                     stream.Read(bytes, 0, (int)stream.Length);
@@ -593,40 +563,42 @@ namespace SimpleTextEditor
                 if ((bytes.Length > 4) && (bytes[0] == 0x00) && (bytes[1] == 0x00) && (bytes[2] == 0xFE) && (bytes[3] == 0xFF)) isUnicode = true;
                 if ((bytes.Length > 3) && (bytes[0] == 0xEF) && (bytes[1] == 0xBB) && (bytes[2] == 0xBF)) isUnicode = true;
 
-                using (StreamReader rdr = new StreamReader(new MemoryStream(bytes), true))
+                string tmp; 
+                using (var rdr = new StreamReader(new MemoryStream(bytes), true))
                 {
-                    editBox.Text = rdr.ReadToEnd();
+                    tmp = rdr.ReadToEnd();
                 }
 
                 // Detect formatting
-                if (editBox.Text.IndexOf("\r\n") < 0) // if doesn't have DOS line endings
+                if (tmp.IndexOf("\r\n") < 0) // if doesn't have DOS line endings
                 {
                     lastFormat = 0;
-                    if (editBox.Text.IndexOf('\n') >= 0)
+                    if (tmp.IndexOf('\n') >= 0)
                     {
                         // Uses unix line endings
-                        editBox.Text = editBox.Text.Replace("\n", "\r\n");
+                        tmp = tmp.Replace("\n", "\r\n");
                         lastFormat = 1;
                     }
-                    else if (editBox.Text.IndexOf('\r') >= 0)
+                    else if (tmp.IndexOf('\r') >= 0)
                     {
                         // Uses MAC line endings
-                        editBox.Text = editBox.Text.Replace("\r", "\r\n");
+                        tmp = tmp.Replace("\r", "\r\n");
                     }
                 }
-
+                
                 if (isUnicode)
                     lastFormat = 2;
 
                 SetOpenFilename(fullFileName);
                 AddRecent(fullFileName);
 
+                editBox.Text = tmp;
                 editBox.SelectionStart = 0;
                 editBox.SelectionLength = 0;
             }
             catch (IOException ex)
             {
-                MessageBox.Show("Error opening '" + fullFileName + "':\n" + ex.Message);
+                MessageBox.Show(string.Format(Resources.ErrorOpeningMessage, fullFileName, ex.Message));
             }
         }
 
@@ -634,7 +606,7 @@ namespace SimpleTextEditor
         {
             fileName = Path.GetFileName(fullFileName);
             filePath = fullFileName.Substring(0, fullFileName.Length - fileName.Length);
-            Text = fileName + " - " + Application.ProductName;
+            Text = string.Format("{0} - {1}", fileName, Application.ProductName);
         }
 
         private void AddRecent(string fullFileName)
@@ -680,23 +652,22 @@ namespace SimpleTextEditor
                     {
                         if (even)
                         {
-                            left += "\\" + pathParts[iLeft++];
+                            left += @"\" + pathParts[iLeft++];
                         }
                         else
                         {
-                            right = pathParts[iRight--] + "\\" + right;
+                            right = pathParts[iRight--] + @"\" + right;
                         }
                         even = !even;
                     }
 
                     if (iLeft <= iRight)
-                        path = left + "\\...\\" + right;
+                        path = left + @"\...\" + right;
                     else
                         path = left + right;
                 }
 
-                ToolStripMenuItem item = new ToolStripMenuItem(path, null, new EventHandler(RecentList_Click));
-                item.Tag = fullPath;
+                var item = new ToolStripMenuItem(path, null, RecentList_Click) { Tag = fullPath };
                 btnOpen.DropDownItems.Add(item);
                 recentList.Add(item);
             }
@@ -721,52 +692,61 @@ namespace SimpleTextEditor
 
         private void editBox_KeyDown(object sender, KeyEventArgs e)
         {
-            if ((e.Modifiers == Keys.Control) && (e.KeyCode == Keys.A))
+            if(e.Modifiers == Keys.Control)
             {
-                editBox.SelectionStart = 0;
-                editBox.SelectionLength = editBox.TextLength;
-                e.SuppressKeyPress = true;
-                e.Handled = true;
-            }
-            if ((e.Modifiers == Keys.Control) && (e.KeyCode == Keys.F))
-            {
-                searchBar.Visible = true;
-                btnSearch.CheckState = CheckState.Checked;
-                searchBox.Focus();
-                e.Handled = true;
-                e.SuppressKeyPress = true;
-            }
-            if ((e.Modifiers == Keys.Control) && (e.KeyCode == Keys.Z))
-            {
-                e.SuppressKeyPress = true;
-                e.Handled = true;
-                DoUndo(1);
-            }
-            if ((e.Modifiers == Keys.Control) && (e.KeyCode == Keys.Y))
-            {
-                e.SuppressKeyPress = true;
-                e.Handled = true;
-                DoRedo(1);
+                if (e.KeyCode == Keys.A)
+                {
+                    editBox.SelectionStart = 0;
+                    editBox.SelectionLength = editBox.TextLength;
+                    e.SuppressKeyPress = true;
+                    e.Handled = true;
+                }
+
+                if (e.KeyCode == Keys.F)
+                {
+                    searchBar.Visible = true;
+                    btnSearch.CheckState = CheckState.Checked;
+                    searchBox.Focus();
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                }
+
+                if (e.KeyCode == Keys.Z)
+                {
+                    e.SuppressKeyPress = true;
+                    e.Handled = true;
+                    DoUndo(1);
+                }
+
+                if (e.KeyCode == Keys.Y)
+                {
+                    e.SuppressKeyPress = true;
+                    e.Handled = true;
+                    DoRedo(1);
+                }
             }
 
             if ((e.KeyCode == Keys.Delete) && (e.Modifiers == Keys.None))
             {
                 if (editBox.SelectionLength > 0)
                 {
-                    AddUndoHistoryItem("Block Delete", editBox.SelectedText, editBox.SelectionStart, editBox.SelectionLength);
+                    AddUndoHistoryItem(@"Block Delete", editBox.SelectedText, editBox.SelectionStart, editBox.SelectionLength);
                 }
                 else if (editBox.TextLength > 0)
                 {
-                    if ((lastItem == null) || (lastItem.UndoType != "Delete"))
+                    if ((lastItem == null) || (lastItem.UndoType != @"Delete"))
                     {
-                        AddUndoHistoryItem("Delete", "", editBox.SelectionStart, 0);
+                        AddUndoHistoryItem(@"Delete", "", editBox.SelectionStart, 0);
                     }
-                    if (editBox.SelectionStart != (lastItem.Start))
+                    else if (editBox.SelectionStart != (lastItem.Start))
                     {
-                        AddUndoHistoryItem("Delete", "", editBox.SelectionStart, 0);
+                        AddUndoHistoryItem(@"Delete", "", editBox.SelectionStart, 0);
                     }
-                    lastItem.Length++;
-                    lastItem.Text += editBox.Text[lastItem.Start];
+                    else
+                    {
+                        lastItem.Length++;
+                        lastItem.Text += editBox.Text[lastItem.Start];
+                    }
                 }
             }
 
@@ -775,15 +755,18 @@ namespace SimpleTextEditor
 
         private void btnUndo_DropDownOpening(object sender, EventArgs e)
         {
-            Point pos = btnUndo.Bounds.Location + new Size(0, btnUndo.Bounds.Height);
+            var pos = btnUndo.Bounds.Location + new Size(0, btnUndo.Bounds.Height);
 
             pos = toolBar.PointToScreen(pos);
 
-            DropDownHistoryBox history = new DropDownHistoryBox();
-            history.HistoryItems = historyItems.ConvertAll<object>(new Converter<HistoryItem, object>(CvtHItoObj));
+            var history = new DropDownHistoryBox
+                              {
+                                  HistoryItems =
+                                      historyItems.ConvertAll(CvtHItoObj)
+                              };
             history.Show();
             history.SetDesktopLocation(pos.X, pos.Y);
-            history.ItemClick += new EventHandler(History_ItemClick);
+            history.ItemClick += History_ItemClick;
 
         }
 
@@ -920,12 +903,12 @@ namespace SimpleTextEditor
                 case 22:
                     if (editBox.SelectionLength > 0)
                     {
-                        AddUndoHistoryItem("Replaced", "", editBox.SelectionStart, editBox.SelectionLength);
+                        AddUndoHistoryItem(@"Replaced", "", editBox.SelectionStart, editBox.SelectionLength);
                         lastItem.Text = editBox.SelectedText;
                     }
                     if (Clipboard.ContainsText())
                     {
-                        AddUndoHistoryItem("Paste", "", editBox.SelectionStart, 0);
+                        AddUndoHistoryItem(@"Paste", "", editBox.SelectionStart, 0);
                         lastItem.Text = Clipboard.GetText();
                         lastItem.Length = lastItem.Text.Length;
                     }
@@ -933,25 +916,25 @@ namespace SimpleTextEditor
                 case 24:
                     if (editBox.SelectionLength > 0)
                     {
-                        AddUndoHistoryItem("Cut", "", editBox.SelectionStart, editBox.SelectionLength);
+                        AddUndoHistoryItem(@"Cut", "", editBox.SelectionStart, editBox.SelectionLength);
                         lastItem.Text = editBox.SelectedText;
                     }
                     break;
                 case 8:
                     if (editBox.SelectionLength > 0)
                     {
-                        AddUndoHistoryItem("Block Delete", "", editBox.SelectionStart, editBox.SelectionLength);
+                        AddUndoHistoryItem(@"Block Delete", "", editBox.SelectionStart, editBox.SelectionLength);
                         lastItem.Text = editBox.SelectedText;
                     }
                     else if (editBox.SelectionStart > 0)
                     {
-                        if ((lastItem == null) || (lastItem.UndoType != "Delete"))
+                        if ((lastItem == null) || (lastItem.UndoType != @"Delete"))
                         {
-                            AddUndoHistoryItem("Delete", "", editBox.SelectionStart, 0);
+                            AddUndoHistoryItem(@"Delete", "", editBox.SelectionStart, 0);
                         }
                         if (editBox.SelectionStart != (lastItem.Start))
                         {
-                            AddUndoHistoryItem("Delete", "", editBox.SelectionStart, 0);
+                            AddUndoHistoryItem(@"Delete", "", editBox.SelectionStart, 0);
                         }
                         lastItem.Length++;
                         lastItem.Start--;
@@ -961,15 +944,15 @@ namespace SimpleTextEditor
                 default:
                     if (editBox.SelectionLength > 0)
                     {
-                        AddUndoHistoryItem("Replaced", editBox.SelectedText, editBox.SelectionStart, editBox.SelectionLength);
+                        AddUndoHistoryItem(@"Replaced", editBox.SelectedText, editBox.SelectionStart, editBox.SelectionLength);
                     }
-                    if ((lastItem == null) || (lastItem.UndoType != "Type"))
+                    if ((lastItem == null) || (lastItem.UndoType != @"Type"))
                     {
-                        AddUndoHistoryItem("Type", "", editBox.SelectionStart, 0);
+                        AddUndoHistoryItem(@"Type", "", editBox.SelectionStart, 0);
                     }
                     if (editBox.SelectionStart != (lastItem.Start + lastItem.Length))
                     {
-                        AddUndoHistoryItem("Type", "", editBox.SelectionStart, 0);
+                        AddUndoHistoryItem(@"Type", "", editBox.SelectionStart, 0);
                     }
                     lastItem.Text += e.KeyChar;
                     lastItem.Length++;
@@ -985,13 +968,15 @@ namespace SimpleTextEditor
 
         private void toolStripSplitButton1_DropDownOpening(object sender, EventArgs e)
         {
-            Point pos = btnRedo.Bounds.Location + new Size(0, btnRedo.Bounds.Height);
+            var pos = btnRedo.Bounds.Location + new Size(0, btnRedo.Bounds.Height);
 
             pos = toolBar.PointToScreen(pos);
 
-            DropDownHistoryBox history = new DropDownHistoryBox();
-            history.HistoryClassText = "Redo";
-            history.HistoryItems = redoHistoryItems.ConvertAll<object>(new Converter<HistoryItem, object>(CvtHItoObj));
+            var history = new DropDownHistoryBox
+                              {
+                                  HistoryClassText = @"Redo",
+                                  HistoryItems = redoHistoryItems.ConvertAll(CvtHItoObj)
+                              };
             history.Show();
             history.SetDesktopLocation(pos.X, pos.Y);
             history.ItemClick += new EventHandler(RedoHistory_ItemClick);
@@ -1005,7 +990,7 @@ namespace SimpleTextEditor
 
         private bool DoSearchNext()
         {
-            StringComparison comparison = searchCase ? StringComparison.CurrentCulture : StringComparison.CurrentCultureIgnoreCase;
+            var comparison = searchCase ? StringComparison.CurrentCulture : StringComparison.CurrentCultureIgnoreCase;
 
             int searchEnd = editBox.TextLength;
             int pos = -1;
@@ -1023,11 +1008,9 @@ namespace SimpleTextEditor
                 searchStart = pos + searchFor.Length;
                 return true;
             }
-            else
-            {
-                editBox.SelectionLength = 0;
-                return false;
-            }
+
+            editBox.SelectionLength = 0;
+            return false;
         }
 
         private void searchBox_KeyPress(object sender, KeyPressEventArgs e)
@@ -1047,36 +1030,37 @@ namespace SimpleTextEditor
 
         private void searchBox_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Enter)
+            if (e.KeyCode != Keys.Enter) 
+                return;
+
+            if (searchBox.Modified)
             {
-                if (searchBox.Modified)
-                {
-                    searchBox.Modified = false;
-                    appSettings.SearchHistory.Add(searchBox.Text);
-                    searchBox.AutoCompleteCustomSource.Add(searchBox.Text);
-                    while (appSettings.SearchHistory.Count > 128)
-                    {
-                        appSettings.SearchHistory.RemoveAt(0);
-                        searchBox.AutoCompleteCustomSource.RemoveAt(0);
-                    }
+                searchBox.Modified = false;
+                appSettings.SearchHistory.Add(searchBox.Text);
+                searchBox.AutoCompleteCustomSource.Add(searchBox.Text);
 
-                    searchStart = editBox.SelectionStart;
+                while (appSettings.SearchHistory.Count > 128)
+                {
+                    appSettings.SearchHistory.RemoveAt(0);
+                    searchBox.AutoCompleteCustomSource.RemoveAt(0);
                 }
 
-                searchFor = searchBox.Text;
-                if (!DoSearchNext())
-                {
-                    searchEndLabel.Visible = true;
-                    searchStart = 0;
-                }
-                else
-                {
-                    searchStart++;
-                    searchEndLabel.Visible = false;
-                }
-                e.Handled = true;
+                searchStart = editBox.SelectionStart;
             }
 
+            searchFor = searchBox.Text;
+            if (!DoSearchNext())
+            {
+                searchEndLabel.Visible = true;
+                searchStart = 0;
+            }
+            else
+            {
+                searchEndLabel.Visible = false;
+                searchStart++;
+            }
+
+            e.Handled = true;
         }
 
         private void toolStripButton3_Click(object sender, EventArgs e)
@@ -1088,11 +1072,6 @@ namespace SimpleTextEditor
                 searchStart = 0;
             }
             else searchEndLabel.Visible = false;
-        }
-
-        private void toolStripComboBox1_Click(object sender, EventArgs e)
-        {
-
         }
 
         private void backgroundColorToolStripMenuItem_Click(object sender, EventArgs e)
@@ -1108,13 +1087,13 @@ namespace SimpleTextEditor
 
         private void toolStripButton4_Click(object sender, EventArgs e)
         {
-            ReplaceBox replace = new ReplaceBox(editBox);
+            var replace = new ReplaceBox(editBox);
             replace.ShowDialog();
         }
 
         private void TextEditorWindow_FormClosed(object sender, FormClosedEventArgs e)
         {
-            foreach (ToolStripMenuItem it in recentList)
+            foreach (var it in recentList)
             {
                 btnOpen.DropDownItems.Remove(it);
                 it.Dispose();
@@ -1123,7 +1102,7 @@ namespace SimpleTextEditor
 
         private void RecentList_Click(object sender, EventArgs e)
         {
-            ToolStripMenuItem it = (ToolStripMenuItem)sender;
+            var it = (ToolStripMenuItem)sender;
 
             if (!AskSave())
                 return;
@@ -1137,16 +1116,11 @@ namespace SimpleTextEditor
             toolStripButton5.CheckState = searchCase ? CheckState.Unchecked : CheckState.Checked;
         }
 
-        private void editBox_Click_1(object sender, EventArgs e)
-        {
-            UpdateStatusBar();
-        }
-
         private void TextEditorWindow_Resize(object sender, EventArgs e)
         {
-            if (this.WindowState == FormWindowState.Normal)
+            if (WindowState == FormWindowState.Normal)
             {
-                unmaximizedSize = this.Size;
+                unmaximizedSize = Size;
             }
         }
 
@@ -1154,33 +1128,31 @@ namespace SimpleTextEditor
         {
             e.Effect = DragDropEffects.None;
 
-            if (e.Data.GetDataPresent(DataFormats.FileDrop))
-            {
-                object data = e.Data.GetData(DataFormats.FileDrop);
-                string[] sdata = (string[])data;
+            if (!e.Data.GetDataPresent(DataFormats.FileDrop)) 
+                return;
 
-                if(sdata.Length == 1)
-                    e.Effect = DragDropEffects.Copy;
-            }
+            var sdata = (string[])e.Data.GetData(DataFormats.FileDrop);
+
+            if(sdata.Length == 1)
+                e.Effect = DragDropEffects.Copy;
         }
 
         private void editBox_DragDrop(object sender, DragEventArgs e)
         {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop))
-            {
-                object data = e.Data.GetData(DataFormats.FileDrop);
-                string[] sdata = (string[])data;
+            if (!e.Data.GetDataPresent(DataFormats.FileDrop)) 
+                return;
 
-                if (sdata.Length == 1)
-                {
-                    string file = sdata[0];
+            var sdata = (string[])e.Data.GetData(DataFormats.FileDrop);
 
-                    if (!AskSave())
-                        return;
+            if (sdata.Length != 1) 
+                return;
 
-                    DoOpenFile(file);
-                }
-            }
+            var file = sdata[0];
+
+            if (!AskSave())
+                return;
+
+            DoOpenFile(file);
         }
 
         private void TextEditorWindow_Shown(object sender, EventArgs e)

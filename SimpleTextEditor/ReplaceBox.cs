@@ -1,15 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Drawing;
-using System.Text;
 using System.Windows.Forms;
+using SimpleTextEditor.Properties;
 
 namespace SimpleTextEditor
 {
     partial class ReplaceBox : Form
     {
-        TextBox Where;
+        readonly TextBox searchIn;
 
         private int searchStart;
         private int selectionStart;
@@ -19,7 +16,7 @@ namespace SimpleTextEditor
         {
             InitializeComponent();
 
-            Where = place;
+            searchIn = place;
 
             Selection.Enabled = place.SelectionLength > 0;
             Selection.Checked = place.SelectedText.IndexOf('\n') > 0;
@@ -35,13 +32,13 @@ namespace SimpleTextEditor
 
         private void SearchButton_Click(object sender, EventArgs e)
         {
-            if ((ReplaceButton.Enabled = DoSearchNext()) == true)
-            {
-                Where.SelectionStart = selectionStart;
-                Where.SelectionLength = SearchBox.TextLength;
-                Where.ScrollToCaret();
-                selectionStart += SearchBox.TextLength;
-            }
+            if ((ReplaceButton.Enabled = DoSearchNext()) != true) 
+                return;
+
+            searchIn.SelectionStart = selectionStart;
+            searchIn.SelectionLength = SearchBox.TextLength;
+            searchIn.ScrollToCaret();
+            selectionStart += SearchBox.TextLength;
         }
 
         private bool DoSearchNext()
@@ -49,23 +46,23 @@ namespace SimpleTextEditor
             if (SearchBox.Modified)
             {
                 SearchBox.Modified = false;
-                searchStart = Where.SelectionStart;
+                searchStart = searchIn.SelectionStart;
             }
 
-            DialogResult result = DialogResult.None;
+            DialogResult result;
             do
             {
-                int searchEnd = Where.TextLength;
+                var searchEnd = searchIn.TextLength;
 
                 if (Selection.Checked) searchEnd = selectionStart + selectionLength;
 
-                StringComparison comparison = Case.Checked ? StringComparison.CurrentCulture : StringComparison.CurrentCultureIgnoreCase;
+                var comparison = Case.Checked ? StringComparison.CurrentCulture : StringComparison.CurrentCultureIgnoreCase;
 
-                int pos = -1;
+                var pos = -1;
 
                 if ((searchStart + SearchBox.TextLength) < searchEnd)
                 {
-                    pos = Where.Text.IndexOf(SearchBox.Text, searchStart, searchEnd - searchStart, comparison);
+                    pos = searchIn.Text.IndexOf(SearchBox.Text, searchStart, searchEnd - searchStart, comparison);
                 }
 
                 if (pos >= 0)
@@ -73,28 +70,24 @@ namespace SimpleTextEditor
                     searchStart = pos;
                     return true;
                 }
+
+                searchIn.SelectionLength = 0;
+                if ((Selection.Checked) && (searchEnd < searchIn.TextLength))
+                {
+                    if (MessageBox.Show(Resources.EndOfSelectedAreaPrompt,
+                                        Resources.SearchReplaceTitle, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                    {
+                        Selection.Checked = false;
+                        return DoSearchNext();
+                    }
+
+                    result = MessageBox.Show(Resources.EndOfSelectionPrompt, Resources.SearchReplaceTitle, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    searchStart = selectionStart;
+                }
                 else
                 {
-                    Where.SelectionLength = 0;
-                    if ((Selection.Checked) && (searchEnd < Where.TextLength))
-                    {
-                        if (MessageBox.Show("Reached the end of the selected area.\nDo you want to expand the search to the rest of the document?",
-                            "Search & Replace", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-                        {
-                            Selection.Checked = false;
-                            return DoSearchNext();
-                        }
-                        else
-                        {
-                            result = MessageBox.Show("Reached the end of the selection.\nDo you want to continue from the beginning?", "Search & Replace", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                            searchStart = selectionStart;
-                        }
-                    }
-                    else
-                    {
-                        result = MessageBox.Show("Reached the end of the document.\nDo you want to continue from the beginning?", "Search & Replace", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                        searchStart = 0;
-                    }
+                    result = MessageBox.Show(Resources.EndOfDocumentPrompt, Resources.SearchReplaceTitle, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    searchStart = 0;
                 }
             }
             while (result == DialogResult.Yes);
@@ -104,8 +97,8 @@ namespace SimpleTextEditor
 
         private void DoReplace(string with)
         {
-            int start = Where.SelectionStart;
-            int length = Where.SelectionLength;
+            int start = searchIn.SelectionStart;
+            int length = searchIn.SelectionLength;
 
             // adjust selection
             if (start < selectionStart)
@@ -134,43 +127,44 @@ namespace SimpleTextEditor
                 selectionLength += (with.Length - length);
             }
 
-            string headText = "";
-            string tailText = "";
-            string replacedText = ReplaceWithBox.Text;
+            var headText = "";
+            var tailText = "";
+            var replacedText = ReplaceWithBox.Text;
 
             if (searchStart > 0)
-                headText = Where.Text.Substring(0, searchStart);
+                headText = searchIn.Text.Substring(0, searchStart);
 
-            if ((searchStart + SearchBox.TextLength) < Where.TextLength)
-                tailText = Where.Text.Substring(searchStart + SearchBox.TextLength);
+            if ((searchStart + SearchBox.TextLength) < searchIn.TextLength)
+                tailText = searchIn.Text.Substring(searchStart + SearchBox.TextLength);
 
-            Where.Text = headText + replacedText + tailText;
-            Where.Modified = true;
+            searchIn.Text = headText + replacedText + tailText;
+            searchIn.Modified = true;
         }
 
         private void CancelButton_Click(object sender, EventArgs e)
         {
-            this.DialogResult = DialogResult.Cancel;
-            this.Close();
+            DialogResult = DialogResult.Cancel;
+            Close();
         }
 
         private void ReplaceBox_FormClosing(object sender, FormClosingEventArgs e)
         {
-            Where.SelectionStart = selectionStart;
-            Where.SelectionLength = selectionLength;
+            searchIn.SelectionStart = selectionStart;
+            searchIn.SelectionLength = selectionLength;
         }
 
         private void ReplaceButton_Click(object sender, EventArgs e)
         {
             DoReplace(ReplaceWithBox.Text);
 
-            if ((ReplaceButton.Enabled = DoSearchNext()) == true)
-            {
-                Where.SelectionStart = selectionStart;
-                Where.SelectionLength = ReplaceWithBox.TextLength;
-                Where.ScrollToCaret();
-                searchStart += ReplaceWithBox.TextLength;
-            }
+            ReplaceButton.Enabled = DoSearchNext();
+            if (!ReplaceButton.Enabled)
+                return;
+
+            searchIn.SelectionStart = selectionStart;
+            searchIn.SelectionLength = ReplaceWithBox.TextLength;
+            searchIn.ScrollToCaret();
+            searchStart += ReplaceWithBox.TextLength;
         }
 
         private void SearchBox_TextChanged(object sender, EventArgs e)
@@ -183,7 +177,7 @@ namespace SimpleTextEditor
             if (SearchBox.Modified)
             {
                 SearchBox.Modified = false;
-                searchStart = Where.SelectionStart;
+                searchStart = searchIn.SelectionStart;
             }
 
 #if false
@@ -196,7 +190,7 @@ namespace SimpleTextEditor
             int numMatches = 0;
             bool needToContinue = true;
 
-            int searchEnd = Where.TextLength;
+            int searchEnd = searchIn.TextLength;
 
             int searchTextLength = SearchBox.TextLength;
 
@@ -212,45 +206,43 @@ namespace SimpleTextEditor
 
                 if ((searchStart+SearchBox.TextLength) < searchEnd)
                 {
-                    pos = Where.Text.IndexOf(SearchBox.Text, searchStart, searchEnd - searchStart, comparison);
+                    pos = searchIn.Text.IndexOf(SearchBox.Text, searchStart, searchEnd - searchStart, comparison);
                 }
 
                 if (pos >= 0)
                 {
-                    outText += Where.Text.Substring(searchStart, pos - searchStart);
+                    outText += searchIn.Text.Substring(searchStart, pos - searchStart);
                     outText += ReplaceWithBox.Text;
                     numMatches++;
                     searchStart = pos + searchTextLength;
                 }
                 else
                 {
-                    needToContinue = false;
-                    outText += Where.Text.Substring(searchStart);
-                    Where.Text = outText;
-                    if ((Selection.Checked) && (searchEnd < Where.TextLength))
+                    outText += searchIn.Text.Substring(searchStart);
+                    searchIn.Text = outText;
+                    if ((Selection.Checked) && (searchEnd < searchIn.TextLength))
                     {
-                        if (MessageBox.Show("Reached the end of the selected area.\nDo you want to expand the search to the rest of the document?",
-                            "Search & Replace", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                        if (MessageBox.Show(Resources.EndOfSelectedAreaPrompt,
+                            Resources.SearchReplaceTitle, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                         {
                             Selection.Checked = false;
-                            needToContinue = true;
                         }
                         else
                         {
-                            needToContinue = (MessageBox.Show("Reached the end of the selection.\nDo you want to continue from the beginning?", "Search & Replace", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes);
+                            needToContinue = (MessageBox.Show(Resources.EndOfSelectionPrompt, Resources.SearchReplaceTitle, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes);
                             searchStart = selectionStart;
                         }
                     }
                     else
                     {
-                        needToContinue = (MessageBox.Show("Reached the end of the document.\nDo you want to continue from the beginning?", "Search & Replace", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes);
+                        needToContinue = (MessageBox.Show(Resources.EndOfDocumentPrompt, Resources.SearchReplaceTitle, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes);
                         searchStart = 0;
                     }
                 }
             }
             while (needToContinue);
 
-            MessageBox.Show("Replace All finished. Replaced " + numMatches + " matches.");
+            MessageBox.Show(string.Format(Resources.ReplaceAllFinishedMessage, numMatches));
 #if false
             // Notepad's replace sucks because it's terribly slow.
             // I'm guessing it's because it does a loop of "replace next" actions until it reaches the end.
