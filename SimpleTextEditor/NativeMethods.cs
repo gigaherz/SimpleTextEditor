@@ -1,5 +1,5 @@
 //
-// Copyright © 2002-2004 Rui Godinho Lopes <rui@ruilopes.com>
+// Copyright ï¿½ 2002-2004 Rui Godinho Lopes <rui@ruilopes.com>
 // All rights reserved.
 //
 // This source file(s) may be redistributed unmodified by any means
@@ -12,7 +12,7 @@
 // printed documentation) and internal comments to the code, notices to
 // the end user as follows:
 //
-// "Portions Copyright © 2002-2004 Rui Godinho Lopes"
+// "Portions Copyright ï¿½ 2002-2004 Rui Godinho Lopes"
 //
 // An email letting me know that you are using it would be nice as well.
 // That's not much to ask considering the amount of work that went into
